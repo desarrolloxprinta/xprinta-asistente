@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="es"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XprintaPro — Guía del Sistema de Diseño</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<style>/* cyrillic-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url("e8a3a669-acef-4d26-9c9b-b344ae038d45") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url("9b4643e0-b754-41db-84f0-2915b3b21a85") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url("acfa08a1-99c8-4845-82dc-d28f4f732437") format('woff2');
+  unicode-range: U+1F00-1FFF;
+}
+/* greek */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url("794af22f-71e6-4cb7-9812-8498fa5e1702") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url("c70f0b54-e191-4484-ac6c-89f81da9b530") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url("b59d1c91-b98b-44a2-89b5-c7e63de20270") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url("d2fcc63d-409d-4397-82ba-d097522888e3") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("e8a3a669-acef-4d26-9c9b-b344ae038d45") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("9b4643e0-b754-41db-84f0-2915b3b21a85") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("acfa08a1-99c8-4845-82dc-d28f4f732437") format('woff2');
+  unicode-range: U+1F00-1FFF;
+}
+/* greek */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("794af22f-71e6-4cb7-9812-8498fa5e1702") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("c70f0b54-e191-4484-ac6c-89f81da9b530") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("b59d1c91-b98b-44a2-89b5-c7e63de20270") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("d2fcc63d-409d-4397-82ba-d097522888e3") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("e8a3a669-acef-4d26-9c9b-b344ae038d45") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("9b4643e0-b754-41db-84f0-2915b3b21a85") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("acfa08a1-99c8-4845-82dc-d28f4f732437") format('woff2');
+  unicode-range: U+1F00-1FFF;
+}
+/* greek */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("794af22f-71e6-4cb7-9812-8498fa5e1702") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("c70f0b54-e191-4484-ac6c-89f81da9b530") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("b59d1c91-b98b-44a2-89b5-c7e63de20270") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("d2fcc63d-409d-4397-82ba-d097522888e3") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("e8a3a669-acef-4d26-9c9b-b344ae038d45") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("9b4643e0-b754-41db-84f0-2915b3b21a85") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("acfa08a1-99c8-4845-82dc-d28f4f732437") format('woff2');
+  unicode-range: U+1F00-1FFF;
+}
+/* greek */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("794af22f-71e6-4cb7-9812-8498fa5e1702") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("c70f0b54-e191-4484-ac6c-89f81da9b530") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("b59d1c91-b98b-44a2-89b5-c7e63de20270") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("d2fcc63d-409d-4397-82ba-d097522888e3") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("e8a3a669-acef-4d26-9c9b-b344ae038d45") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("9b4643e0-b754-41db-84f0-2915b3b21a85") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("acfa08a1-99c8-4845-82dc-d28f4f732437") format('woff2');
+  unicode-range: U+1F00-1FFF;
+}
+/* greek */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("794af22f-71e6-4cb7-9812-8498fa5e1702") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("c70f0b54-e191-4484-ac6c-89f81da9b530") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("b59d1c91-b98b-44a2-89b5-c7e63de20270") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("d2fcc63d-409d-4397-82ba-d097522888e3") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("e8a3a669-acef-4d26-9c9b-b344ae038d45") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("9b4643e0-b754-41db-84f0-2915b3b21a85") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("acfa08a1-99c8-4845-82dc-d28f4f732437") format('woff2');
+  unicode-range: U+1F00-1FFF;
+}
+/* greek */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("794af22f-71e6-4cb7-9812-8498fa5e1702") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("c70f0b54-e191-4484-ac6c-89f81da9b530") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("b59d1c91-b98b-44a2-89b5-c7e63de20270") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("d2fcc63d-409d-4397-82ba-d097522888e3") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Merriweather';
+  font-style: italic;
+  font-weight: 400;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("fc4635c3-f99b-4cb2-847d-1a0422feb87b") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Merriweather';
+  font-style: italic;
+  font-weight: 400;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("ac7c0b24-73e6-4fa8-b304-484b9b24c05d") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Merriweather';
+  font-style: italic;
+  font-weight: 400;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("507107b2-71b8-4793-994d-c176d08d2f0b") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Merriweather';
+  font-style: italic;
+  font-weight: 400;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("051bbb53-44e9-4f09-8fb9-ba2a054cba21") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Merriweather';
+  font-style: italic;
+  font-weight: 400;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("ecea729b-98bb-4094-ae96-cb1cbf5f9fe2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+</style>
+<style>
+  doc-page:not(:defined) { visibility: hidden; }
+
+  :root {
+    --xp-orange: #F18108;
+    --xp-orange-600: #D97307;
+    --xp-orange-100: #FDEBD3;
+    --xp-ink: #0A0A0A;
+    --xp-paper: #F4F4F5;
+    --n200: #E4E4E7;
+    --n300: #D4D4D8;
+    --n400: #A1A1AA;
+    --n500: #71717A;
+    --n700: #3F3F46;
+    --n800: #27272A;
+    --n900: #18181B;
+    --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-serif: "Merriweather", Georgia, serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  doc-page {
+    font-family: var(--font-sans);
+    color: var(--xp-ink);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.6;
+  }
+
+  /* ---- Type primitives ---- */
+  .eyebrow {
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--xp-orange);
+    margin: 0 0 14px;
+  }
+  .eyebrow.muted { color: var(--n400); }
+
+  h1, h2, h3 { font-weight: 300; letter-spacing: -0.02em; line-height: 1.1; margin: 0; }
+  h2 { font-size: 34px; margin: 0 0 6px; }
+  h2 em { font-family: var(--font-serif); font-style: italic; font-weight: 400; color: var(--n500); }
+  h3 { font-size: 19px; font-weight: 500; letter-spacing: -0.01em; margin: 0 0 10px; }
+  p { margin: 0 0 12px; color: var(--n700); font-size: 13.5px; }
+  .lead { font-size: 15px; color: var(--n700); line-height: 1.65; }
+
+  .section { margin: 0 0 56px; }
+  .section-head { display: flex; align-items: baseline; gap: 16px; border-bottom: 1px solid var(--n200); padding-bottom: 18px; margin-bottom: 28px; }
+  .section-idx { font-size: 11.5px; font-weight: 600; letter-spacing: 0.14em; color: var(--n400); white-space: nowrap; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+
+  /* ---- Cover ---- */
+  .cover { min-height: 9in; display: flex; flex-direction: column; justify-content: space-between; }
+  .cover-top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .cover-logo { height: 46px; }
+  .cover-meta { text-align: right; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--n400); line-height: 1.9; }
+  .cover-title { font-size: 76px; font-weight: 300; letter-spacing: -0.03em; line-height: 1.02; margin: 0 0 18px; }
+  .cover-title em { font-family: var(--font-serif); font-style: italic; font-weight: 400; color: var(--xp-orange); }
+  .cover-sub { font-size: 17px; color: var(--n500); max-width: 30em; line-height: 1.6; }
+  .cover-rule { height: 4px; width: 64px; background: var(--xp-orange); margin: 0 0 26px; }
+  .cover-foot { display: flex; justify-content: space-between; align-items: flex-end; font-size: 11.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--n400); border-top: 1px solid var(--n200); padding-top: 20px; }
+
+  /* ---- Color ---- */
+  .swatch-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .swatch { border: 1px solid var(--n200); border-radius: 12px; overflow: hidden; }
+  .swatch .chip { height: 72px; }
+  .swatch .info { padding: 10px 12px 12px; }
+  .swatch .name { font-size: 12px; font-weight: 600; margin: 0 0 2px; color: var(--xp-ink); }
+  .swatch .hex { font-family: "SFMono-Regular", ui-monospace, Menlo, monospace; font-size: 11px; color: var(--n500); text-transform: uppercase; }
+  .swatch .var { font-family: ui-monospace, Menlo, monospace; font-size: 10px; color: var(--n400); margin-top: 3px; }
+  .neutral-bar { display: flex; border-radius: 12px; overflow: hidden; border: 1px solid var(--n200); margin-top: 18px; }
+  .neutral-bar .n { flex: 1; height: 56px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 6px; font-family: ui-monospace, Menlo, monospace; font-size: 9px; }
+
+  /* ---- Type specimen ---- */
+  .spec-row { display: grid; grid-template-columns: 96px 1fr; gap: 20px; align-items: baseline; padding: 16px 0; border-bottom: 1px solid var(--n200); }
+  .spec-label { font-family: ui-monospace, Menlo, monospace; font-size: 10.5px; color: var(--n400); line-height: 1.5; padding-top: 6px; }
+  .spec-sample { color: var(--xp-ink); }
+
+  /* ---- Scale / radii / motion tables ---- */
+  .kv { display: grid; grid-template-columns: 1fr auto; gap: 8px 16px; font-size: 12.5px; }
+  .kv .k { color: var(--n700); }
+  .kv .k b { font-weight: 600; color: var(--xp-ink); }
+  .kv .v { font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; color: var(--n500); text-align: right; }
+  .kv > div { padding: 7px 0; border-bottom: 1px solid var(--n200); }
+
+  .radii-row { display: flex; gap: 16px; align-items: flex-end; }
+  .radii-item { text-align: center; }
+  .radii-box { width: 60px; height: 60px; background: var(--xp-ink); border: 1px solid var(--n800); }
+  .radii-cap { font-family: ui-monospace, Menlo, monospace; font-size: 10px; color: var(--n500); margin-top: 8px; }
+
+  /* ---- Components ---- */
+  .comp-showcase { border: 1px solid var(--n200); border-radius: 16px; padding: 26px; background: #fff; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-sans); font-weight: 600; font-size: 13px; letter-spacing: -0.01em; border-radius: 9999px; padding: 12px 24px; border: 1px solid transparent; cursor: default; }
+  .btn-primary { background: var(--xp-orange); color: #fff; }
+  .btn-dark { background: var(--xp-ink); color: #fff; }
+  .btn-outline { background: transparent; color: var(--xp-ink); border-color: var(--xp-ink); }
+  .btn-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+
+  .badge { display: inline-flex; align-items: center; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; padding: 5px 12px; border-radius: 9999px; }
+  .badge-accent { background: var(--xp-orange-100); color: var(--xp-orange-600); }
+  .badge-dark { background: var(--xp-ink); color: #fff; }
+  .badge-ghost { background: transparent; color: var(--n500); border: 1px solid var(--n300); }
+
+  .sector-card { position: relative; border-radius: 24px; overflow: hidden; height: 168px; background: var(--xp-ink); }
+  .sector-card .ov { position: absolute; inset: 0; background: rgba(0,0,0,0.55); }
+  .sector-card .idx { position: absolute; top: 16px; left: 18px; font-size: 11px; font-weight: 600; letter-spacing: 0.14em; color: rgba(255,255,255,0.7); }
+  .sector-card .ttl { position: absolute; bottom: 18px; left: 18px; font-size: 22px; font-weight: 300; color: #fff; letter-spacing: -0.01em; }
+  .sector-card img { width: 100%; height: 100%; object-fit: cover; }
+
+  .comp-list { display: grid; grid-template-columns: 1fr 1fr; gap: 0 32px; }
+  .comp-list .item { padding: 11px 0; border-bottom: 1px solid var(--n200); font-size: 12.5px; }
+  .comp-list .item b { font-weight: 600; }
+  .comp-list .item span { color: var(--n500); }
+
+  .field-demo { max-width: 260px; }
+  .field-demo label { display: block; font-size: 10.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--n500); margin-bottom: 6px; }
+  .field-demo .line { border: 0; border-bottom: 1.5px solid var(--n300); padding: 6px 0; font-size: 14px; color: var(--n400); }
+  .field-demo .line.focus { border-bottom-color: var(--xp-orange); color: var(--xp-ink); }
+
+  .note { font-size: 12px; color: var(--n500); background: var(--xp-paper); border-radius: 10px; padding: 14px 16px; border-left: 3px solid var(--xp-orange); }
+
+  .caption { font-family: ui-monospace, Menlo, monospace; font-size: 10px; color: var(--n400); margin-top: 8px; }
+
+  .running { display: flex; justify-content: space-between; align-items: center; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--n400); }
+  .running img { height: 16px; opacity: 0.85; }
+
+  @media print {
+    .swatch, .comp-showcase, .sector-card, .spec-row, .kv > div { break-inside: avoid; }
+    .section { break-inside: avoid-page; }
+  }
+</style>
+</head>
+<body>
+
+<doc-page size="letter" margin="0.7in">
+
+  <div slot="footer" class="running">
+    <span>XprintaPro · Sistema de Diseño</span>
+    <span>Trade Marketing &amp; Corporate Visual Identity</span>
+  </div>
+
+  <!-- ============ COVER ============ -->
+  <div class="cover">
+    <div class="cover-top">
+      <img class="cover-logo" src="41db8056-71e4-411d-b3e0-6a3d87418099" alt="XprintaPro">
+      <div class="cover-meta">
+        Design System<br>Versión 1.0<br>Julio 2026
+      </div>
+    </div>
+    <div>
+      <div class="cover-rule"></div>
+      <p class="eyebrow">Guía de Identidad · Sistema de Diseño</p>
+      <h1 class="cover-title">El sistema<br>que <em>construye</em><br>la marca</h1>
+      <p class="cover-sub">Fundamentos visuales, tono de voz y componentes de XprintaPro — <em style="font-family:var(--font-serif);font-style:italic">your GRAPHIC extension</em>. Todo lo necesario para reproducir la marca de forma coherente en cualquier plataforma.</p>
+    </div>
+    <div class="cover-foot">
+      <span>Color · Tipografía · Espaciado · Componentes · Voz</span>
+      <span>new.xprintapro.com</span>
+    </div>
+  </div>
+
+  <!-- ============ 01 ESSENCE ============ -->
+  <div class="section" style="margin-top:56px;">
+    <div class="section-head">
+      <span class="section-idx">01 / FUNDAMENTO</span>
+      <h2>La esencia de <em>la marca</em></h2>
+    </div>
+    <div class="two-col">
+      <div>
+        <p class="lead">XprintaPro implanta la imagen de marca en espacios retail y corporativos en toda España: rotulación, gráfica de tienda y despliegue de identidad visual, con fabricación propia, logística y más de 50 delegaciones.</p>
+        <p>El lenguaje visual es <b>minimalista y de alto contraste</b>: negro casi puro y blanco, con un único naranja cálido como acento. Tipografía display ligera y de gran tamaño, con una línea editorial en Merriweather itálica.</p>
+      </div>
+      <div>
+        <h3>Voz y tono</h3>
+        <p>Corporativo, seguro, técnico pero cercano. Vende capacidad y escala nacional. Frases declarativas y orientadas al beneficio, nunca frívolas.</p>
+        <div class="note" style="margin-top:16px;">
+          <b>Dispositivo de firma:</b> índices numerados de sección — <b>01 / Aplicaciones</b> — y titulares de dos líneas donde la segunda es un acento itálico en gris. Sustantivos clave resaltados en naranja dentro del titular.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 02 COLOR ============ -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-idx">02 / COLOR</span>
+      <h2>Un acento, <em>alto contraste</em></h2>
+    </div>
+    <p class="lead" style="margin-bottom:24px;">Sistema restringido: tinta casi negra, blanco y una escala neutra de grises, con un único naranja de marca. El naranja se usa con moderación — eyebrows, resaltados, botones primarios, focus.</p>
+
+    <div class="swatch-grid">
+      <div class="swatch">
+        <div class="chip" style="background:#F18108;"></div>
+        <div class="info"><p class="name">Naranja marca</p><span class="hex">#F18108</span><div class="var">--xp-orange</div></div>
+      </div>
+      <div class="swatch">
+        <div class="chip" style="background:#D97307;"></div>
+        <div class="info"><p class="name">Naranja hover</p><span class="hex">#D97307</span><div class="var">--xp-orange-600</div></div>
+      </div>
+      <div class="swatch">
+        <div class="chip" style="background:#0A0A0A;"></div>
+        <div class="info"><p class="name">Tinta</p><span class="hex">#0A0A0A</span><div class="var">--xp-ink</div></div>
+      </div>
+      <div class="swatch">
+        <div class="chip" style="background:#F4F4F5;border-bottom:1px solid #E4E4E7;"></div>
+        <div class="info"><p class="name">Papel</p><span class="hex">#F4F4F5</span><div class="var">--xp-paper</div></div>
+      </div>
+    </div>
+
+    <p class="eyebrow muted" style="margin:26px 0 10px;">Escala neutra · Zinc</p>
+    <div class="neutral-bar">
+      <div class="n" style="background:#FAFAFA;color:#71717A;">50</div>
+      <div class="n" style="background:#F4F4F5;color:#71717A;">100</div>
+      <div class="n" style="background:#E4E4E7;color:#71717A;">200</div>
+      <div class="n" style="background:#D4D4D8;color:#3F3F46;">300</div>
+      <div class="n" style="background:#A1A1AA;color:#fff;">400</div>
+      <div class="n" style="background:#71717A;color:#fff;">500</div>
+      <div class="n" style="background:#52525B;color:#fff;">600</div>
+      <div class="n" style="background:#3F3F46;color:#fff;">700</div>
+      <div class="n" style="background:#27272A;color:#fff;">800</div>
+      <div class="n" style="background:#18181B;color:#fff;">900</div>
+    </div>
+    <p class="caption">Sin gradientes decorativos · Sin acentos secundarios · Naranja tint #FDEBD3 para washes · Éxito #34B257</p>
+  </div>
+
+  <!-- ============ 03 TYPOGRAPHY ============ -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-idx">03 / TIPOGRAFÍA</span>
+      <h2>Inter, con acento <em>editorial</em></h2>
+    </div>
+    <p class="lead" style="margin-bottom:8px;">Inter para todo; Merriweather itálica como acento editorial en titulares de dos líneas. Los display son ligeros (300), grandes y muy ajustados (-0.02em).</p>
+
+    <div class="spec-row">
+      <div class="spec-label">Hero · 80px<br>light · -0.02em</div>
+      <div class="spec-sample" style="font-size:52px;font-weight:300;letter-spacing:-0.02em;line-height:1;">Imagen de marca</div>
+    </div>
+    <div class="spec-row">
+      <div class="spec-label">Display · 64px<br>light · -0.02em</div>
+      <div class="spec-sample" style="font-size:40px;font-weight:300;letter-spacing:-0.02em;">Sectores de <em style="font-family:var(--font-serif);font-style:italic;color:var(--n500);">Especialización</em></div>
+    </div>
+    <div class="spec-row">
+      <div class="spec-label">Eyebrow · 13.6px<br>semibold · 0.17em</div>
+      <div class="spec-sample eyebrow" style="margin:0;">01 / Aplicaciones</div>
+    </div>
+    <div class="spec-row">
+      <div class="spec-label">Lead · 20px<br>regular · 1.6</div>
+      <div class="spec-sample" style="font-size:17px;color:var(--n700);">Fabricación propia, logística y cobertura nacional para grandes proyectos.</div>
+    </div>
+    <div class="spec-row">
+      <div class="spec-label">Body · 16px<br>regular · 1.6</div>
+      <div class="spec-sample" style="font-size:14px;color:var(--n700);">Transforma la identidad de tu marca con máxima calidad y precisión técnica.</div>
+    </div>
+
+    <div class="two-col" style="margin-top:28px;">
+      <div>
+        <h3>Familias</h3>
+        <div class="kv">
+          <div class="k"><b>Inter</b> — sans principal</div><div class="v">300–800</div>
+          <div class="k"><b>Merriweather</b> — acento itálico</div><div class="v">400 italic</div>
+        </div>
+      </div>
+      <div>
+        <h3>Escala &amp; espaciado de letra</h3>
+        <div class="kv">
+          <div class="k">Display / Hero tracking</div><div class="v">-0.02em</div>
+          <div class="k">Eyebrow tracking</div><div class="v">0.17em</div>
+          <div class="k">Line-height display / body</div><div class="v">1.1 / 1.6</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 04 SPACING ============ -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-idx">04 / ESPACIO &amp; FORMA</span>
+      <h2>Ritmo <em>generoso</em>, formas suaves</h2>
+    </div>
+    <div class="two-col">
+      <div>
+        <h3>Escala de espaciado</h3>
+        <p style="font-size:12.5px;">Base 4px. El ritmo vertical de sección es amplio (128px). Contenedor máx. 1440px con padding lateral de ~96px.</p>
+        <div class="kv" style="margin-top:8px;">
+          <div class="k">4 · 8 · 12 · 16</div><div class="v">micro</div>
+          <div class="k">23 · 32 · 48 · 64</div><div class="v">bloque</div>
+          <div class="k">96 · 128</div><div class="v">sección</div>
+        </div>
+        <h3 style="margin-top:24px;">Sombras &amp; motion</h3>
+        <div class="kv">
+          <div class="k">Card</div><div class="v">0 8px 24px /.08</div>
+          <div class="k">Navbar</div><div class="v">0 10px 40px /.08</div>
+          <div class="k">Ease-out</div><div class="v">.16,1,.3,1</div>
+          <div class="k">Duración</div><div class="v">160/280/500ms</div>
+        </div>
+      </div>
+      <div>
+        <h3>Radios de esquina</h3>
+        <div class="radii-row" style="margin-top:14px;">
+          <div class="radii-item"><div class="radii-box" style="border-radius:8px;"></div><div class="radii-cap">8 · sm</div></div>
+          <div class="radii-item"><div class="radii-box" style="border-radius:16px;"></div><div class="radii-cap">16 · md</div></div>
+          <div class="radii-item"><div class="radii-box" style="border-radius:24px;"></div><div class="radii-cap">24 · lg</div></div>
+          <div class="radii-item"><div class="radii-box" style="border-radius:9999px;"></div><div class="radii-cap">full</div></div>
+        </div>
+        <div class="note" style="margin-top:22px;">
+          <b>Bordes hairline 1px.</b> Superficies claras #E4E4E7; superficies oscuras #27272A. Los campos de formulario usan una sola regla inferior que se vuelve naranja al foco.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 05 COMPONENTS ============ -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-idx">05 / COMPONENTES</span>
+      <h2>Piezas del <em>sistema</em></h2>
+    </div>
+
+    <div class="two-col" style="margin-bottom:24px;">
+      <div class="comp-showcase">
+        <p class="eyebrow muted" style="margin-bottom:16px;">Botones · pill radius full</p>
+        <div class="btn-row">
+          <span class="btn btn-primary">Empezar proyecto →</span>
+          <span class="btn btn-dark">Ver más</span>
+          <span class="btn btn-outline">Contacto</span>
+        </div>
+        <p class="eyebrow muted" style="margin:22px 0 12px;">Badges</p>
+        <div class="btn-row">
+          <span class="badge badge-accent">Nacional</span>
+          <span class="badge badge-dark">+50 sedes</span>
+          <span class="badge badge-ghost">Retail</span>
+        </div>
+      </div>
+      <div class="comp-showcase">
+        <p class="eyebrow muted" style="margin-bottom:16px;">Campo · regla inferior al foco</p>
+        <div class="field-demo">
+          <label>Nombre</label>
+          <div class="line">Marca / empresa</div>
+        </div>
+        <div class="field-demo" style="margin-top:18px;">
+          <label style="color:var(--xp-orange);">Email</label>
+          <div class="line focus">hola@tumarca.com</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="two-col" style="margin-bottom:24px;">
+      <div class="sector-card">
+        <img src="c5d3e55d-2ef1-40b3-8950-af269e2b3321" alt="" onerror="this.style.display='none'">
+        <div class="ov"></div>
+        <span class="idx">01</span>
+        <span class="ttl">Retail</span>
+      </div>
+      <div class="sector-card">
+        <img src="016a1421-441f-4541-af13-645d40096db7" alt="" onerror="this.style.display='none'">
+        <div class="ov"></div>
+        <span class="idx">02</span>
+        <span class="ttl">Corporativo</span>
+      </div>
+    </div>
+    <p class="caption" style="margin-bottom:24px;">Sector cards — imagen a sangre bajo overlay negro, índice arriba-izquierda, título grande abajo. Hover: zoom 1.06 + overlay más claro.</p>
+
+    <h3>Catálogo de componentes</h3>
+    <div class="comp-list">
+      <div class="item"><b>Button</b> <span>— CTA pill (primary / dark / outline)</span></div>
+      <div class="item"><b>Badge</b> <span>— etiqueta pill</span></div>
+      <div class="item"><b>Card</b> <span>— panel claro / oscuro / ghost</span></div>
+      <div class="item"><b>Eyebrow</b> <span>— label índice de sección</span></div>
+      <div class="item"><b>SectionHeading</b> <span>— titular display 2 líneas</span></div>
+      <div class="item"><b>SectorCard</b> <span>— tile de imagen con overlay</span></div>
+      <div class="item"><b>StatBlock / FeatureStat</b> <span>— datos y cifras</span></div>
+      <div class="item"><b>Field</b> <span>— input / textarea / select underline</span></div>
+      <div class="item"><b>Navbar</b> <span>— pill flotante translúcido</span></div>
+      <div class="item"><b>Footer</b> <span>— chrome oscuro</span></div>
+      <div class="item"><b>ProcessStep</b> <span>— paso de metodología</span></div>
+      <div class="item"><b>LogoMarquee</b> <span>— cinta de clientes</span></div>
+    </div>
+  </div>
+
+  <!-- ============ 06 IMAGERY ============ -->
+  <div class="section" style="margin-bottom:0;">
+    <div class="section-head">
+      <span class="section-idx">06 / IMAGEN &amp; ICONOGRAFÍA</span>
+      <h2>Fotografía <em>real</em>, casi sin iconos</h2>
+    </div>
+    <div class="two-col">
+      <div>
+        <h3>Fotografía</h3>
+        <p>Real, cálida, arquitectónica — rótulos iluminados, escaparates, espacios industriales. Color, a menudo al anochecer, siempre bajo overlay negro sólido (rgba(0,0,0,.8)) para que el display blanco sea legible. Sin texturas, sin patrones, sin ilustración.</p>
+      </div>
+      <div>
+        <h3>Iconografía</h3>
+        <p>La marca es <b>casi sin iconos</b>: el significado lo llevan la tipografía, los índices numerados y la fotografía. El único glifo recurrente es la flecha <b>→</b> en los CTA. Sin emoji.</p>
+        <div class="note" style="margin-top:14px;">Si un producto necesita iconos UI, usar <b>Lucide</b> con trazo 1.5–2px en tinta o gris — nunca naranja salvo acción primaria.</div>
+      </div>
+    </div>
+  </div>
+
+</doc-page>
+<script src="dbb1b53a-e2f3-4a92-8e81-9d62467c9528"></script>
+
+
+</body></html>
