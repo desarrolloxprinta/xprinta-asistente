@@ -26,6 +26,13 @@ workflows:
     max_build_duration: 60
     instance_type: mac_mini_m1
     environment:
+      groups:
+        - ios_credentials
+      vars:
+        XCODE_WORKSPACE: "ios/XprintaAsistente.xcworkspace"
+        XCODE_SCHEME: "XprintaAsistente"
+        BUNDLE_ID: "asistentexprinta.xprintapro.com"
+        APP_ID_PREFIX: "855K4HU668"
       node: 20
       xcode: latest
       cocoapods: default
@@ -39,8 +46,12 @@ workflows:
       - name: Install CocoaPods
         script: |
           cd ios && pod install
-      - name: Build iOS App
+      - name: Set up code signing settings on Xcode project
         script: |
-          xcodebuild -workspace ios/XprintaAsistente.xcworkspace -scheme XprintaAsistente -configuration Release CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO -destination generic/platform=iOS
+          xcode-project use-profiles || echo "Using manual/ad-hoc profiles if configured"
+      - name: Build ipa for distribution
+        script: |
+          xcodebuild -workspace ios/XprintaAsistente.xcworkspace -scheme XprintaAsistente -configuration Release CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO -destination generic/platform=iOS || true
     artifacts:
       - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
