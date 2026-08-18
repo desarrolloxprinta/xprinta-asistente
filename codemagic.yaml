@@ -5,7 +5,7 @@ workflows:
     instance_type: mac_mini_m1
     environment:
       groups:
-        - ios_credentials
+        - app_store_credentials
       vars:
         XCODE_WORKSPACE: "ios/XprintaAsistente.xcworkspace"
         XCODE_SCHEME: "XprintaAsistente"
@@ -25,13 +25,19 @@ workflows:
       - name: Install CocoaPods dependencies
         script: |
           cd ios && pod install --repo-update
-      - name: Configure Xcode Project Team ID & Signing
+      - name: Set up Code Signing
         script: |
-          xcode-project use-profiles || echo "Applying team signing configuration..."
+          xcode-project use-profiles || echo "Profiles configured via Codemagic"
       - name: Build iOS IPA Package
         script: |
-          xcodebuild             -workspace "$XCODE_WORKSPACE"             -scheme "$XCODE_SCHEME"             -sdk iphoneos             -configuration Release             DEVELOPMENT_TEAM="855K4HU668"             -archivePath build/ios/xcarchive/XprintaAsistente.xcarchive             archive             CODE_SIGN_IDENTITY=""             CODE_SIGNING_REQUIRED=NO             CODE_SIGNING_ALLOWED=NO ||           xcode-project build-ipa             --workspace "$XCODE_WORKSPACE"             --scheme "$XCODE_SCHEME"
+          xcode-project build-ipa \
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME"
     artifacts:
       - build/ios/ipa/*.ipa
-      - build/ios/xcarchive/*.xcarchive
       - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        expire_build_submitted_for_review: false
