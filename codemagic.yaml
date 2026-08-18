@@ -31,6 +31,13 @@ workflows:
       - name: Add certificates to keychain
         script: |
           keychain add-certificates
+      - name: Increment build number
+        script: |
+          # Increment build number automatically based on Codemagic build counter + 2
+          BUILD_NUM=$((BUILD_NUMBER + 5))
+          echo "Setting build number to: $BUILD_NUM"
+          # Update in app.json if needed
+          node -e "const fs = require('fs'); const app = JSON.parse(fs.readFileSync('app.json')); app.expo.ios.buildNumber = '$BUILD_NUM'; fs.writeFileSync('app.json', JSON.stringify(app, null, 2));"
       - name: Install npm dependencies
         script: |
           npm ci || npm install --legacy-peer-deps
