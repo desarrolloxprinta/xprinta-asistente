@@ -17,7 +17,10 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSSpeechRecognitionUsageDescription": "Xprinta Asistente necesita reconocimiento de voz para transcribir tus notas e ideas de diseño y producción.",
-        "NSMicrophoneUsageDescription": "Xprinta Asistente necesita acceso al micrófono para interactuar por voz con el asistente."
+        "NSMicrophoneUsageDescription": "Xprinta Asistente necesita acceso al micrófono para interactuar por voz con el asistente.",
+        "NSPhotoLibraryUsageDescription": "Xprinta Asistente necesita acceso a la galería para adjuntar referencias visuales, bocetos e imágenes de rótulos a tus notas e ideas.",
+        "NSPhotoLibraryAddUsageDescription": "Xprinta Asistente necesita guardar imágenes de referencia técnica y notas en tu galería de fotos.",
+        "NSCameraUsageDescription": "Xprinta Asistente necesita acceso a la cámara para capturar fotografías de obras y proyectos de rotulación."
       },
       "appleTeamId": "855K4HU668"
     },
@@ -31,7 +34,10 @@
       },
       "permissions": [
         "RECORD_AUDIO",
-        "INTERNET"
+        "INTERNET",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
       ],
       "predictiveBackGestureEnabled": false
     },
