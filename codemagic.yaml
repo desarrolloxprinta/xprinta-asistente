@@ -19,24 +19,18 @@ workflows:
       - name: Set up keychain for code signing
         script: |
           keychain initialize
-      - name: Fetch or use Provisioning Profile
+      - name: Fetch and generate distribution signing files from App Store Connect
         script: |
-          # If App Store Connect credentials are valid, fetch them dynamically
-          if [[ -n "$APP_STORE_CONNECT_PRIVATE_KEY" && "$APP_STORE_CONNECT_PRIVATE_KEY" != *"*"* ]]; then
-            app-store-connect fetch-signing-files "asistentexprinta.xprintapro.com" --type IOS_APP_STORE --create || true
-          fi
-          # Install local provision profile for asistentexprinta.xprintapro.com
-          if [ -f "xprintaasistente.mobileprovision" ]; then
-            echo "Installing bundled xprintaasistente.mobileprovision..."
-            PROFILES_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
-            mkdir -p "$PROFILES_DIR"
-            PROFILE_UUID=$(grep -A1 -a UUID xprintaasistente.mobileprovision | grep -o "[-a-zA-Z0-9]\{36\}")
-            cp xprintaasistente.mobileprovision "$PROFILES_DIR/$PROFILE_UUID.mobileprovision"
-            echo "Installed profile UUID: $PROFILE_UUID"
-          fi
+          app-store-connect fetch-signing-files "asistentexprinta.xprintapro.com" \
+            --type IOS_APP_STORE \
+            --create \
+            --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
+            --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
+            --private-key "$APP_STORE_CONNECT_PRIVATE_KEY" \
+            --certificate-key "$CERTIFICATE_PRIVATE_KEY"
       - name: Add certificates to keychain
         script: |
-          keychain add-certificates || true
+          keychain add-certificates
       - name: Install npm dependencies
         script: |
           npm ci || npm install --legacy-peer-deps
@@ -48,7 +42,7 @@ workflows:
           cd ios && pod install --repo-update
       - name: Apply Code Signing to Xcode project
         script: |
-          xcode-project use-profiles || echo "Profiles applied"
+          xcode-project use-profiles
       - name: Build iOS IPA Package
         script: |
           xcode-project build-ipa \
