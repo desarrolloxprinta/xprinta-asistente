@@ -40,7 +40,8 @@
     },
     "plugins": [
       "expo-font",
-      "expo-audio"
+      "expo-audio",
+      "@react-native-voice/voice"
     ]
   }
 }

@@ -4,7 +4,7 @@ const STORAGE_KEY_OPENROUTER = '@xprinta_openrouter_key';
 const STORAGE_KEY_MODEL = '@xprinta_openrouter_model';
 
 // User's active OpenRouter API Key
-const DEFAULT_KEY = 'YOUR_OPENROUTER_API_KEY';
+const DEFAULT_KEY = 'sk-or-v1-CONFIGURE_KEY_IN_SETTINGS';
 const DEFAULT_MODEL = 'openai/gpt-4o-mini';
 
 export interface OpenRouterResponse {

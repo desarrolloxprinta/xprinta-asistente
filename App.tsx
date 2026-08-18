@@ -58,6 +58,7 @@ import { BlueAppService } from './src/services/blueapp';
 import { OpenRouterService } from './src/services/openrouter';
 import { NasSyncService } from './src/services/nasSync';
 import { AuthService, XPRINTA_AUTHORIZED_MEMBERS } from './src/services/auth';
+import { VoiceRecognitionService } from './src/services/voiceRecognition';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CATEGORIES: IdeaCategory[] = ['Todos', 'Rótulos', 'Diseño', 'Comercial', 'Producción'];
@@ -232,12 +233,15 @@ export default function App() {
     ).start();
   };
 
+  const [liveTranscript, setLiveTranscript] = useState<string>('');
+
   const triggerVoiceInteraction = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     
     if (!isListening) {
       setIsListening(true);
-      setVoiceStatus('Captando frecuencia acústica...');
+      setLiveTranscript('');
+      setVoiceStatus('Escuchando tu voz... Habla ahora');
       setAssistantResponse('');
 
       Animated.loop(
@@ -255,13 +259,34 @@ export default function App() {
         ])
       ).start();
 
-      setTimeout(async () => {
-        setIsListening(false);
-        setIsProcessingAI(true);
-        setVoiceStatus('Cerebro OpenRouter procesando...');
+      const started = await VoiceRecognitionService.startListening((text) => {
+        if (text) {
+          setLiveTranscript(text);
+          setVoiceStatus(`"${text.slice(0, 35)}..."`);
+        }
+      });
 
-        const simulatedQuery = 'Registrar nueva señalética en metacrilato satinado para cliente franquicia Xprinta con tarea en Blue.app';
-        const aiResponse = await OpenRouterService.chatWithAssistant(simulatedQuery);
+      if (!started) {
+        setVoiceStatus('Toca para hablar');
+        setIsListening(false);
+      }
+    } else {
+      // User tapped again to FINISH speaking
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      setIsListening(false);
+      setIsProcessingAI(true);
+      setVoiceStatus('Procesando dictado con IA...');
+
+      Animated.timing(frequencyPulse, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }).start();
+
+      const userText = (await VoiceRecognitionService.stopListening()) || liveTranscript || 'Nueva idea para proyecto Xprinta';
+      
+      try {
+        const aiResponse = await OpenRouterService.chatWithAssistant(userText);
         
         setIsProcessingAI(false);
         setAssistantResponse(aiResponse.replyText);
@@ -270,15 +295,18 @@ export default function App() {
         const newIdea: IdeaItem = {
           id: Date.now().toString(),
           title: aiResponse.extractedTitle,
-          content: simulatedQuery,
+          content: userText,
           category: aiResponse.suggestedCategory,
           type: 'voice_memo',
-          tags: ['OpenRouter', 'Voz', aiResponse.suggestedCategory],
+          tags: ['Voz', aiResponse.suggestedCategory, 'OpenRouter'],
           createdAt: new Date().toISOString(),
         };
 
         const updated = await StorageService.saveIdea(newIdea);
         setIdeas(updated);
+
+        // Mirror to NAS
+        // await NasSyncService.saveNoteToNas(newIdea);
 
         if (aiResponse.extractedTask) {
           await BlueAppService.createTask({
@@ -288,22 +316,12 @@ export default function App() {
           });
         }
 
+        // Voice playback
         await ElevenLabsService.speakText(aiResponse.replyText);
-
-        Animated.timing(frequencyPulse, {
-          toValue: 1,
-          duration: 800,
-          useNativeDriver: true,
-        }).start();
-      }, 3500);
-    } else {
-      setIsListening(false);
-      setVoiceStatus('Toca el campo cuántico para hablar');
-      Animated.timing(frequencyPulse, {
-        toValue: 1,
-        duration: 400,
-        useNativeDriver: true,
-      }).start();
+      } catch (err) {
+        setIsProcessingAI(false);
+        setVoiceStatus('Toca para hablar');
+      }
     }
   };
 

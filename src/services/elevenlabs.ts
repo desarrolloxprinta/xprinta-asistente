@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createAudioPlayer } from 'expo-audio';
 
 const STORAGE_KEY_ELEVENLABS = '@xprinta_elevenlabs_key';
-const DEFAULT_KEY = 'YOUR_ELEVENLABS_API_KEY';
+const DEFAULT_KEY = 'sk_9bfb86dc60bd91b3977a997168a8b6c5453672a860872bce';
 const DEFAULT_VOICE_ID = '21m00Tcm4TlvDq8ikWAM';
 
 let currentPlayer: any = null;
