@@ -58,7 +58,7 @@ import { BlueAppService } from './src/services/blueapp';
 import { OpenRouterService } from './src/services/openrouter';
 import { NasSyncService } from './src/services/nasSync';
 import { AuthService, XPRINTA_AUTHORIZED_MEMBERS } from './src/services/auth';
-import { VoiceRecognitionService } from './src/services/voiceRecognition';
+import { SpeechService } from './src/services/speechService';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CATEGORIES: IdeaCategory[] = ['Todos', 'Rótulos', 'Diseño', 'Comercial', 'Producción'];
@@ -259,7 +259,7 @@ export default function App() {
         ])
       ).start();
 
-      const started = await VoiceRecognitionService.startListening((text) => {
+      const started = await SpeechService.startListening((text) => {
         if (text) {
           setLiveTranscript(text);
           setVoiceStatus(`"${text.slice(0, 35)}..."`);
@@ -283,7 +283,7 @@ export default function App() {
         useNativeDriver: true,
       }).start();
 
-      const userText = (await VoiceRecognitionService.stopListening()) || liveTranscript || 'Nueva idea para proyecto Xprinta';
+      const userText = (await SpeechService.stopListening()) || liveTranscript || 'Nueva idea para proyecto Xprinta';
       
       try {
         const aiResponse = await OpenRouterService.chatWithAssistant(userText);

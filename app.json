@@ -41,7 +41,7 @@
     "plugins": [
       "expo-font",
       "expo-audio",
-      "@react-native-voice/voice"
+      "expo-speech-recognition"
     ]
   }
 }
