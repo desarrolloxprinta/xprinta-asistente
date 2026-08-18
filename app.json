@@ -15,8 +15,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "asistentexprinta.xprintapro.com",
       "infoPlist": {
-        "NSSpeechRecognitionUsageDescription": "Xprinta Asistente necesita reconocimiento de voz para transcribir tus notas e ideas de dise\u00f1o y producci\u00f3n.",
-        "NSMicrophoneUsageDescription": "Xprinta Asistente necesita acceso al micr\u00f3fono para interactuar por voz con el asistente."
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSSpeechRecognitionUsageDescription": "Xprinta Asistente necesita reconocimiento de voz para transcribir tus notas e ideas de diseño y producción.",
+        "NSMicrophoneUsageDescription": "Xprinta Asistente necesita acceso al micrófono para interactuar por voz con el asistente."
       },
       "appleTeamId": "855K4HU668"
     },
