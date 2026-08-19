@@ -17,16 +17,21 @@ export interface TaskDraft {
   tags?: string[];
   workspaceName?: string;
   workspaceId?: string;
+  category?: string;
+  attachedToType?: 'idea' | 'task';
+  attachedToId?: string;
 }
 
 export interface OpenRouterResponse {
   replyText: string;
   type: 'conversation' | 'task' | 'idea' | 'link';
-  suggestedCategory: 'Rótulos' | 'Diseño' | 'Comercial' | 'Producción';
+  suggestedCategory?: string;
+  isCategoryNew?: boolean;
+  needsClarification?: boolean;
   extractedTitle?: string;
   extractedUrl?: string;
-  isTaskComplete?: boolean; // True solo cuando tiene todos los campos clave
-  missingFields?: Array<'assignee' | 'description' | 'workspace' | 'dueDate'>;
+  isTaskComplete?: boolean;
+  missingFields?: Array<'assignee' | 'description' | 'workspace' | 'dueDate' | 'category' | 'linkAttachment'>;
   extractedTask?: TaskDraft;
 }
 
@@ -50,13 +55,14 @@ export class OpenRouterService {
   }
 
   /**
-   * Procesa la voz con inteligencia conversacional iterativa para completar campos al 100%
+   * Procesa la voz con diálogo interactivo dinámico (categorías libres + vinculación de enlaces)
    */
   static async chatWithAssistant(
     userMessage: string,
     currentUser?: UserProfile | null,
     teamMembersList?: Array<{ name: string; blueUserId?: string; role: string }>,
     workspacesList?: Array<{ id: string; name: string }>,
+    existingCategories?: string[],
     currentTaskDraft?: TaskDraft | null
   ): Promise<OpenRouterResponse> {
     const apiKey = await this.getApiKey();
@@ -88,61 +94,68 @@ export class OpenRouterService {
       ? `Usuario hablando actualmente: ${currentUser.name} (${currentUser.role}, Blue ID: ${currentUser.blueUserId || 'N/A'}).`
       : 'Usuario actual: Miembro de Xprinta.';
 
+    const categoriesContext = existingCategories && existingCategories.length > 0
+      ? `CATEGORÍAS EXISTENTES CREADAS POR EL USUARIO: ${existingCategories.join(', ')}.`
+      : 'El usuario aún no tiene categorías creadas (es totalmente libre de crear la que prefiera).';
+
     const draftContext = currentTaskDraft
-      ? `ESTADO ACTUAL DEL BORRADOR DE TAREA EN CURSO:
+      ? `ESTADO ACTUAL DEL BORRADOR EN CURSO:
 - Título: ${currentTaskDraft.title || 'Pendiente'}
 - Responsable: ${currentTaskDraft.assignedToName || 'NO DEFINIDO'}
-- Descripción: ${currentTaskDraft.description || 'NO DEFINIDA'}
-- Plazo/Vencimiento: ${currentTaskDraft.dueDateText || 'NO DEFINIDO'}
+- Categoría: ${currentTaskDraft.category || 'NO DEFINIDA'}
 - Workspace: ${currentTaskDraft.workspaceName || 'NO DEFINIDO'}
-- Etiquetas: ${(currentTaskDraft.tags || []).join(', ') || 'Pendiente'}`
+- Enlace vinculado a: ${currentTaskDraft.attachedToType || 'NO DEFINIDO'}`
       : 'No hay borrador previo en curso.';
 
-    const systemPrompt = `Eres el Asistente Inteligente de Voz de XPRINTA, especializado en gestión de proyectos en Blue.app, rotulación, señalética de franquicias, diseño y producción industrial.
+    const systemPrompt = `Eres el Asistente Inteligente de Voz de XPRINTA.
 
 ${currentUserContext}
 
 EQUIPO OFICIAL EN BLUE.APP:
 ${teamContext}
 
-WORKSPACES DISPONIBLES EN BLUE.APP:
+WORKSPACES EN BLUE.APP:
 ${workspacesContext}
+
+${categoriesContext}
 
 ${draftContext}
 
-DIRECTRICES PARA TAREAS DE BLUE.APP (MUY IMPORTANTE):
-1. Si el usuario pide crear una tarea pero la información es escueta (falta responsable específico, descripción técnica, plazo o workspace):
-   - NO autoasignes a la ligera.
-   - PREGUNTA al usuario en 'replyText' con voz natural y ejecutiva para que te aclare el dato faltante (ej: "¿Para quién es la tarea y para cuándo la necesitas?", o "¿En qué proyecto o workspace la ubicamos?").
-   - Pon "isTaskComplete": false y lista en "missingFields" los campos que faltan.
+DIRECTRICES DE DIÁLOGO E INTERACCIÓN (MUY IMPORTANTE):
+1. **CATEGORÍAS DINÁMICAS (NO HARDCODED)**:
+   - Las categorías no son fijas ni predeterminadas. El usuario crea las que necesite.
+   - Cuando el usuario te transmita una idea nueva, analiza si encaja en alguna categoría existente o pregúntale por voz en qué categoría desea clasificarla o si creamos una nueva para esa idea.
 
-2. Si el usuario ya proporcionó o completó los datos (o te responde a la pregunta previa completando el responsable, plazo o descripción):
-   - Consolida el borrador.
-   - Si ya tiene responsable y descripción básica, pon "isTaskComplete": true y en 'replyText' confirma con voz natural la creación completa (ej: "Perfecto, he creado la tarea en Blue.app para Jorge con fecha para este viernes.").
+2. **ENLACES INTERESANTES (INSTAGRAM, WEB, REDES)**:
+   - Cuando el usuario comparta o mencione un enlace de referencia o inspiración, pregúntale de forma natural si quiere vincularlo a una idea general o atarlo a una tarea específica del equipo.
 
-3. Para saludos o charla informal ("hola", "me escuchas"):
-   - "type": "conversation", responde amistosamente y NO crees tareas.
+3. **TAREAS DE TRABAJO EN BLUE.APP**:
+   - Si faltan datos clave (responsable, plazo o especificaciones técnicas), pregunta amigablemente para completarlos antes de publicar la tarea.
 
-4. Para referencias de redes o links:
-   - "type": "link".
+4. **CONVERSACIÓN CASUAL O SALUDOS**:
+   - "type": "conversation", responde de manera humana y ejecutiva sin crear notas innecesarias.
 
 DEBES responder ÚNICAMENTE un objeto JSON válido con esta estructura:
 {
   "type": "conversation" | "task" | "idea" | "link",
-  "replyText": "Respuesta conversacional hablada, clara y humana",
-  "suggestedCategory": "Rótulos" | "Diseño" | "Comercial" | "Producción",
-  "isTaskComplete": false,
-  "missingFields": ["assignee", "dueDate", "workspace", "description"],
+  "replyText": "Respuesta conversacional hablada con tono humano y claro",
+  "suggestedCategory": "Nombre de la categoría existente o nueva propuesta",
+  "isCategoryNew": true/false,
+  "needsClarification": true/false,
+  "isTaskComplete": true/false,
+  "missingFields": ["assignee", "category", "linkAttachment", "dueDate", "description"],
   "extractedTitle": "Título claro de la idea o tarea",
+  "extractedUrl": "URL si se detectó",
   "extractedTask": {
-    "title": "Título claro de la tarea",
-    "description": "Detalles técnicos completos",
-    "assignedToName": "Nombre del asignado (ej: Jorge Rodríguez)",
-    "assignedUserId": "ID de Blue.app si se detectó",
-    "dueDateText": "Texto del plazo (ej: este viernes, 25 de agosto)",
-    "workspaceName": "Nombre del workspace si se indicó",
-    "workspaceId": "ID del workspace si se indicó",
-    "tags": ["Producción", "Urgente"]
+    "title": "Título claro de la tarea o idea",
+    "description": "Detalles completos",
+    "category": "Categoría acordada",
+    "assignedToName": "Nombre del asignado si es tarea",
+    "assignedUserId": "ID de Blue.app si aplica",
+    "dueDateText": "Texto del plazo",
+    "workspaceName": "Nombre del workspace",
+    "workspaceId": "ID del workspace",
+    "tags": ["Etiqueta1", "Etiqueta2"]
   }
 }`;
 
@@ -175,7 +188,6 @@ DEBES responder ÚNICAMENTE un objeto JSON válido con esta estructura:
       const parsed = JSON.parse(content);
 
       if (parsed.type === 'task' && parsed.extractedTask) {
-        // Resolver ID del asignado si vino por nombre
         if (!parsed.extractedTask.assignedUserId && parsed.extractedTask.assignedToName && teamMembersList) {
           const match = teamMembersList.find(m => 
             m.name.toLowerCase().includes(parsed.extractedTask.assignedToName.toLowerCase()) ||
@@ -190,19 +202,20 @@ DEBES responder ÚNICAMENTE un objeto JSON válido con esta estructura:
       return {
         type: parsed.type || 'conversation',
         replyText: parsed.replyText || '¡Te escucho! ¿En qué te ayudo?',
-        suggestedCategory: parsed.suggestedCategory || 'Rótulos',
+        suggestedCategory: parsed.suggestedCategory,
+        isCategoryNew: parsed.isCategoryNew,
+        needsClarification: parsed.needsClarification,
         extractedTitle: parsed.extractedTitle,
         extractedUrl: parsed.extractedUrl,
         isTaskComplete: parsed.isTaskComplete ?? true,
         missingFields: parsed.missingFields,
-        extractedTask: parsed.type === 'task' ? parsed.extractedTask : undefined,
+        extractedTask: parsed.extractedTask,
       };
     } catch (error) {
       console.warn('OpenRouter fallback:', error);
       return {
         type: 'conversation',
-        replyText: 'Te escucho. Dime qué tarea quieres crear o para quién es.',
-        suggestedCategory: 'Rótulos',
+        replyText: 'Te escucho. Cuéntame tu idea o qué tarea deseas preparar.',
       };
     }
   }

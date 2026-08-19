@@ -1,4 +1,4 @@
-export type IdeaCategory = 'Todos' | 'Rótulos' | 'Diseño' | 'Comercial' | 'Producción';
+export type IdeaCategory = string;
 
 export type IdeaType = 'voice_memo' | 'task' | 'link' | 'quick_note' | 'observation';
 
@@ -6,7 +6,7 @@ export interface IdeaItem {
   id: string;
   title: string;
   content: string;
-  category: IdeaCategory;
+  category: string; // Categoría dinámica creada por el usuario o asignada por la IA
   type: IdeaType;
   url?: string;
   tags: string[];

@@ -15,7 +15,8 @@ import {
   Easing,
   ActivityIndicator,
   Alert,
-  Linking
+  Linking,
+  useColorScheme
 } from 'react-native';
 import {
   useFonts,
@@ -48,10 +49,15 @@ import {
   ShieldCheck,
   LogOut,
   UserCheck,
-  Database
+  Database,
+  Sun,
+  Moon,
+  Smartphone,
+  Trash2
 } from 'lucide-react-native';
 
-import { colors, typography, spacing, radius } from './src/theme/tokens';
+import { colors, lightTheme, darkTheme, typography, spacing, radius, ThemeColors } from './src/theme/tokens';
+import { ThemeService, ThemePreference } from './src/services/themeService';
 import { IdeaItem, IdeaCategory, UserProfile } from './src/types';
 import { StorageService } from './src/services/storage';
 import { ElevenLabsService } from './src/services/elevenlabs';
@@ -62,10 +68,9 @@ import { AuthService, XPRINTA_AUTHORIZED_MEMBERS } from './src/services/auth';
 import { SpeechService } from './src/services/speechService';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const CATEGORIES: IdeaCategory[] = ['Todos', 'Rótulos', 'Diseño', 'Comercial', 'Producción'];
 
-const TOTAL_PARTICLES = 120;
-const RINGS = [35, 60, 90, 125, 160];
+const TOTAL_PARTICLES = 480; // Densidad viva cuántica de partículas
+const RINGS = [4, 10, 18, 28, 42, 58, 76, 98, 122, 145];
 
 const OPENROUTER_MODELS = [
   { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini (Rápido)' },
@@ -93,9 +98,20 @@ export default function App() {
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
 
+  // Theme preference state (light by default, dark or auto)
+  const systemColorScheme = useColorScheme();
+  const [themePref, setThemePref] = useState<ThemePreference>('light');
+  
+  const activeTheme: ThemeColors = themePref === 'auto'
+    ? (systemColorScheme === 'dark' ? darkTheme : lightTheme)
+    : (themePref === 'dark' ? darkTheme : lightTheme);
+  const styles = createStyles(activeTheme);
+
   // Main state
   const [ideas, setIdeas] = useState<IdeaItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('Todos');
+  const [activeSectionTab, setActiveSectionTab] = useState<'ideas' | 'tasks' | 'links'>('ideas');
+  const [selectedDetailItem, setSelectedDetailItem] = useState<IdeaItem | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [projects, setProjects] = useState<any[]>([]);
 
@@ -121,7 +137,9 @@ export default function App() {
   // New Idea Fields
   const [newTitle, setNewTitle] = useState('');
   const [newContent, setNewContent] = useState('');
-  const [newCategory, setNewCategory] = useState<IdeaCategory>('Rótulos');
+  const [newCategory, setNewCategory] = useState<string>('General');
+  const [customCategoryInput, setCustomCategoryInput] = useState<string>('');
+  const [isAddingNewCat, setIsAddingNewCat] = useState<boolean>(false);
   const [newUrl, setNewUrl] = useState('');
 
   // Voice Interaction State
@@ -131,29 +149,48 @@ export default function App() {
   const [assistantResponse, setAssistantResponse] = useState<string>('');
   const [activeTaskDraft, setActiveTaskDraft] = useState<TaskDraft | null>(null);
 
-  // Animations
+  // Animations & Dynamic Living Core
   const rotationAnim = useRef(new Animated.Value(0)).current;
   const counterRotationAnim = useRef(new Animated.Value(0)).current;
   const frequencyPulse = useRef(new Animated.Value(1)).current;
+  const idlePulseAnim = useRef(new Animated.Value(1)).current;
+  const coreGlowAnim = useRef(new Animated.Value(0.4)).current;
+  const innerSpinAnim = useRef(new Animated.Value(0)).current;
 
   const particleField = useRef(
     Array.from({ length: TOTAL_PARTICLES }, (_, i) => {
-      const ringIndex = i % RINGS.length;
-      const baseRadius = RINGS[ringIndex];
-      const countInRing = TOTAL_PARTICLES / RINGS.length;
-      const angle = ((i % countInRing) / countInRing) * 2 * Math.PI + (ringIndex * 0.4);
-      const size = (i % 5 === 0 ? 3.5 : (i % 3 === 0 ? 2.5 : 1.8));
-      const opacity = 0.25 + (Math.random() * 0.7);
+      // Si i < 80, son partículas concentradas dentro del propio núcleo activo (3px a 20px)
+      let baseRadius: number;
+      if (i < 80) {
+        baseRadius = 3 + Math.random() * 18;
+      } else {
+        const u = Math.pow(Math.random(), 1.4);
+        baseRadius = 18 + u * 125;
+      }
       
+      const angle = Math.random() * 2 * Math.PI;
+      const size = baseRadius < 25 ? 1.0 : (baseRadius < 60 ? 1.2 : 1.5);
+      const isCore = baseRadius < 25;
+      const opacity = isCore ? (0.8 + Math.random() * 0.2) : (0.25 + Math.random() * 0.5);
+      
+      let pColor = colors.primary;
+      if (baseRadius < 15) {
+        pColor = '#FFFFFF';
+      } else if (baseRadius < 35) {
+        pColor = '#FFA845';
+      } else if (baseRadius < 85) {
+        pColor = '#F18108';
+      } else {
+        pColor = '#D06B02';
+      }
+
       return {
         id: i,
         baseRadius,
         angle,
         size,
         opacity,
-        color: ringIndex === 0 
-          ? '#FFFFFF' 
-          : (ringIndex === 1 ? '#FFA336' : (ringIndex === 2 ? colors.primary : '#D97307')),
+        color: pColor,
         x: Math.cos(angle) * baseRadius,
         y: Math.sin(angle) * baseRadius,
       };
@@ -236,6 +273,8 @@ export default function App() {
   };
 
   const loadInitialData = async (userProfile?: UserProfile | null) => {
+    const savedTheme = await ThemeService.getThemePreference();
+    setThemePref(savedTheme);
     const activeUser = userProfile || currentUser;
     const loadedIdeas = await StorageService.getIdeas(activeUser?.id);
     const loadedProjects = await BlueAppService.fetchProjects();
@@ -249,22 +288,70 @@ export default function App() {
   };
 
   const startParticleEngine = () => {
+    // 1. Rotación viva de enjambre exterior
     Animated.loop(
       Animated.timing(rotationAnim, {
         toValue: 1,
-        duration: 32000,
+        duration: 18000,
         easing: Easing.linear,
         useNativeDriver: true,
       })
     ).start();
 
+    // 2. Contra-rotación dinámica
     Animated.loop(
       Animated.timing(counterRotationAnim, {
         toValue: 1,
-        duration: 22000,
+        duration: 13000,
         easing: Easing.linear,
         useNativeDriver: true,
       })
+    ).start();
+
+    // 3. Rotación ultra-rápida del núcleo interno
+    Animated.loop(
+      Animated.timing(innerSpinAnim, {
+        toValue: 1,
+        duration: 7000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    ).start();
+
+    // 4. Respiración cuántica constante (pulso de vida continuo listo para esperar toque)
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(idlePulseAnim, {
+          toValue: 1.08,
+          duration: 1600,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(idlePulseAnim, {
+          toValue: 0.94,
+          duration: 1600,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+
+    // 5. Resplandor pulsante del núcleo
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(coreGlowAnim, {
+          toValue: 0.9,
+          duration: 1400,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(coreGlowAnim, {
+          toValue: 0.35,
+          duration: 1400,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+      ])
     ).start();
   };
 
@@ -292,11 +379,13 @@ export default function App() {
       const members = await AuthService.getMembers();
       const workspaces = projects.map(p => ({ id: p.id, name: p.name }));
       
+      const distinctCats = userCategories.filter(c => c !== 'Todos');
       const aiResponse = await OpenRouterService.chatWithAssistant(
         speechText,
         currentUser,
         members,
         workspaces,
+        distinctCats,
         activeTaskDraft
       );
       
@@ -333,13 +422,16 @@ export default function App() {
         const targetWorkspace = mergedDraft.workspaceId || projects[0]?.id || 'app-xprinta';
         const targetUserId = mergedDraft.assignedUserId;
 
+        const categoryToUse = aiResponse.suggestedCategory || mergedDraft.category || 'General';
+        const rawTags = (mergedDraft.tags && mergedDraft.tags.length > 0) ? mergedDraft.tags : [categoryToUse];
+
         await BlueAppService.createTask({
           title: mergedDraft.title || speechText.slice(0, 45),
           description: mergedDraft.description || speechText,
           projectId: targetWorkspace,
           assigneeIds: targetUserId ? [targetUserId] : undefined,
-          tags: (mergedDraft.tags || [aiResponse.suggestedCategory]).map(t => ({
-            title: t,
+          tags: rawTags.map(t => ({
+            title: t || 'General',
             color: '#F18108'
           })),
         });
@@ -353,9 +445,9 @@ export default function App() {
 • Asignado a: ${mergedDraft.assignedToName || 'Equipo'}
 • Proyecto: ${mergedDraft.workspaceName || 'Xprinta'}
 • Plazo: ${mergedDraft.dueDateText || 'Sin fecha'}`,
-          category: aiResponse.suggestedCategory,
+          category: categoryToUse,
           type: 'task',
-          tags: [`Tarea (${mergedDraft.assignedToName || 'Equipo'})`, aiResponse.suggestedCategory, 'Blue.app'],
+          tags: [`Tarea (${mergedDraft.assignedToName || 'Equipo'})`, categoryToUse, 'Blue.app'],
           createdAt: new Date().toISOString(),
           syncedWithBlueApp: true,
         };
@@ -366,18 +458,19 @@ export default function App() {
 
       // 4. Si es idea o referencia de link
       const isLinkMode = aiResponse.type === 'link';
-      setVoiceStatus(aiResponse.extractedTitle ? `✓ ${aiResponse.suggestedCategory}` : '');
+      const categoryToUse = aiResponse.suggestedCategory || 'General';
+      setVoiceStatus(aiResponse.extractedTitle ? `✓ ${categoryToUse}` : '');
 
       const newIdea: IdeaItem = {
         id: Date.now().toString(),
         title: aiResponse.extractedTitle || speechText.slice(0, 45),
         content: speechText,
-        category: aiResponse.suggestedCategory,
+        category: categoryToUse,
         type: isLinkMode ? 'link' : 'voice_memo',
         url: aiResponse.extractedUrl || (isLinkMode ? speechText : undefined),
         tags: [
           isLinkMode ? 'Referencia Redes' : 'Idea',
-          aiResponse.suggestedCategory,
+          categoryToUse,
           'Voz'
         ],
         createdAt: new Date().toISOString(),
@@ -445,14 +538,15 @@ export default function App() {
     if (!newTitle.trim()) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
+    const ideaCategory = (newCategory && newCategory.trim()) || (customCategoryInput && customCategoryInput.trim()) || 'General';
     const idea: IdeaItem = {
       id: Date.now().toString(),
       title: newTitle,
       content: newContent,
-      category: newCategory,
+      category: ideaCategory,
       type: newUrl ? 'link' : 'observation',
       url: newUrl || undefined,
-      tags: [newCategory, 'Xprinta'],
+      tags: [ideaCategory, 'Xprinta'],
       createdAt: new Date().toISOString(),
     };
 
@@ -509,7 +603,7 @@ export default function App() {
   if (!currentUser) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor="#050505" />
+        <StatusBar barStyle={activeTheme.isDark ? "light-content" : "dark-content"} backgroundColor={activeTheme.bgApp} />
         <ScrollView contentContainerStyle={styles.loginContainer}>
           <View style={styles.loginBrandHeader}>
             <View style={styles.badgeProtected}>
@@ -590,16 +684,39 @@ export default function App() {
     outputRange: ['360deg', '0deg'],
   });
 
+  const rotateInnerFast = innerSpinAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
+  // Categorías 100% dinámicas extraídas del contenido real del usuario
+  const userCategories: string[] = ['Todos', ...Array.from(new Set(ideas.map(i => i.category).filter(Boolean)))];
+
   const filteredIdeas = ideas.filter(item => {
+    // 1. Filtro por sección activa (Ideas, Tareas, Enlaces)
+    let matchesSection = false;
+    if (activeSectionTab === 'ideas') {
+      matchesSection = item.type !== 'task' && item.type !== 'link';
+    } else if (activeSectionTab === 'tasks') {
+      matchesSection = item.type === 'task';
+    } else if (activeSectionTab === 'links') {
+      matchesSection = item.type === 'link' || !!item.url;
+    }
+
+    // 2. Filtro por categoría y búsqueda
     const matchesCategory = selectedCategory === 'Todos' || item.category === selectedCategory;
     const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           item.content.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
+    return matchesSection && matchesCategory && matchesSearch;
   });
+
+  const ideasCount = ideas.filter(i => i.type !== 'task' && i.type !== 'link').length;
+  const tasksCount = ideas.filter(i => i.type === 'task').length;
+  const linksCount = ideas.filter(i => i.type === 'link' || !!i.url).length;
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#050505" />
+      <StatusBar barStyle={activeTheme.isDark ? "light-content" : "dark-content"} backgroundColor={activeTheme.bgApp} />
 
       {/* Header Minimalista & Modelo de IA */}
       <View style={styles.header}>
@@ -631,24 +748,25 @@ export default function App() {
         </View>
       </View>
 
-      {/* Canvas Cuántico */}
+      {/* Canvas Cuántico Vivo y Dinámico */}
       <TouchableOpacity
-        activeOpacity={1}
+        activeOpacity={0.92}
         onPress={triggerVoiceInteraction}
         style={styles.quantumStage}
       >
+        {/* Capa 1: Enjambre Exterior Rotatorio Horario */}
         <Animated.View
           style={[
             styles.swarmContainer,
             {
               transform: [
                 { rotate: rotateClockwise },
-                { scale: frequencyPulse }
+                { scale: Animated.multiply(idlePulseAnim, frequencyPulse) }
               ]
             }
           ]}
         >
-          {particleField.slice(0, 60).map(p => (
+          {particleField.slice(0, 240).map(p => (
             <View
               key={p.id}
               style={[
@@ -658,42 +776,43 @@ export default function App() {
                   height: p.size,
                   borderRadius: p.size / 2,
                   backgroundColor: isListening ? '#FFFFFF' : p.color,
-                  opacity: p.opacity,
+                  opacity: isListening ? 0.95 : p.opacity,
                   transform: [
                     { translateX: p.x },
                     { translateY: p.y },
                   ],
                   shadowColor: p.color,
-                  shadowOpacity: isListening ? 1 : 0.6,
-                  shadowRadius: isListening ? 6 : 3,
+                  shadowOpacity: isListening ? 0.9 : 0.35,
+                  shadowRadius: isListening ? 4 : 1.5,
                 }
               ]}
             />
           ))}
         </Animated.View>
 
+        {/* Capa 2: Enjambre Exterior Contra-Rotatorio */}
         <Animated.View
           style={[
             styles.swarmContainer,
             {
               transform: [
                 { rotate: rotateCounterClockwise },
-                { scale: isListening ? frequencyPulse : 1 }
+                { scale: isListening ? frequencyPulse : idlePulseAnim }
               ]
             }
           ]}
         >
-          {particleField.slice(60, 120).map(p => (
+          {particleField.slice(240, 400).map(p => (
             <View
               key={p.id}
               style={[
                 styles.miniParticle,
                 {
-                  width: p.size * (isListening ? 1.4 : 1),
-                  height: p.size * (isListening ? 1.4 : 1),
+                  width: p.size * (isListening ? 1.3 : 1),
+                  height: p.size * (isListening ? 1.3 : 1),
                   borderRadius: p.size / 2,
-                  backgroundColor: p.color,
-                  opacity: p.opacity,
+                  backgroundColor: isListening ? '#FFBA6B' : p.color,
+                  opacity: isListening ? 0.9 : p.opacity,
                   transform: [
                     { translateX: p.x },
                     { translateY: p.y },
@@ -704,16 +823,70 @@ export default function App() {
           ))}
         </Animated.View>
 
+        {/* Capa 3: Micro-partículas densas dentro del Núcleo Activo */}
+        <Animated.View
+          style={[
+            styles.coreSwarmContainer,
+            {
+              transform: [
+                { rotate: rotateInnerFast },
+                { scale: idlePulseAnim }
+              ]
+            }
+          ]}
+        >
+          {particleField.slice(400, 480).map(p => (
+            <View
+              key={p.id}
+              style={[
+                styles.miniParticle,
+                {
+                  width: p.size,
+                  height: p.size,
+                  borderRadius: p.size / 2,
+                  backgroundColor: isListening ? '#FFFFFF' : p.color,
+                  opacity: 0.95,
+                  transform: [
+                    { translateX: p.x },
+                    { translateY: p.y },
+                  ],
+                  shadowColor: '#FFFFFF',
+                  shadowOpacity: 0.8,
+                  shadowRadius: 3,
+                }
+              ]}
+            />
+          ))}
+        </Animated.View>
+
+        {/* Halo de luz respiratorio perimetral */}
+        <Animated.View
+          style={[
+            styles.quantumAuraRing,
+            {
+              transform: [{ scale: Animated.multiply(idlePulseAnim, isListening ? frequencyPulse : 1) }],
+              opacity: coreGlowAnim,
+            }
+          ]}
+        />
+
+        {/* Núcleo de Plasma Cuántico Central */}
         <Animated.View
           style={[
             styles.quantumCore,
             {
-              transform: [{ scale: isListening ? frequencyPulse : 1 }],
+              transform: [
+                { scale: Animated.multiply(idlePulseAnim, isListening ? frequencyPulse : 1) }
+              ],
               borderColor: isListening ? '#FFFFFF' : colors.primary,
-              backgroundColor: isListening ? 'rgba(241, 129, 8, 0.25)' : 'rgba(241, 129, 8, 0.08)'
+              backgroundColor: isListening ? 'rgba(241, 129, 8, 0.35)' : 'rgba(241, 129, 8, 0.15)'
             }
           ]}
         >
+          {/* Anillo de cristal interno */}
+          <View style={styles.coreInnerRing} />
+          {/* Orbe de energía viva central */}
+          <Animated.View style={[styles.coreEnergyOrb, { opacity: coreGlowAnim }]} />
           <View style={styles.coreCenterDot} />
         </Animated.View>
 
@@ -744,8 +917,8 @@ export default function App() {
             setIdeasModalVisible(true);
           }}
         >
-          <Bookmark size={16} color={colors.paper} />
-          <Text style={styles.pillButtonText}>Ideas ({ideas.length})</Text>
+          <Bookmark size={16} color={colors.primary} />
+          <Text style={styles.pillButtonText}>Repositorio ({ideas.length})</Text>
           <ChevronUp size={14} color={colors.n400} />
         </TouchableOpacity>
 
@@ -769,12 +942,57 @@ export default function App() {
             </View>
 
             <View style={styles.sheetHeader}>
-              <View>
-                <Text style={styles.eyebrow}>REPOSITORIO DE IDEAS</Text>
-                <Text style={styles.sheetTitle}>Ideas & Enlaces</Text>
+              <View style={{ flex: 1, marginRight: 12 }}>
+                <Text style={styles.eyebrow}>XPRINTA WORKSPACE</Text>
+                <Text style={styles.sheetTitle} numberOfLines={1}>Repositorio</Text>
               </View>
-              <TouchableOpacity hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }} onPress={() => setIdeasModalVisible(false)}>
-                <X size={20} color={colors.n400} />
+              <TouchableOpacity
+                style={styles.closeBtnCircle}
+                onPress={() => setIdeasModalVisible(false)}
+              >
+                <X size={18} color={colors.primary} />
+              </TouchableOpacity>
+            </View>
+
+            {/* 3 APARTADOS PRINCIPALES: IDEAS | TAREAS | ENLACES */}
+            <View style={styles.sectionTabsRow}>
+              <TouchableOpacity
+                style={[styles.sectionTabBtn, activeSectionTab === 'ideas' && styles.sectionTabBtnActive]}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setActiveSectionTab('ideas');
+                }}
+              >
+                <Bookmark size={14} color={activeSectionTab === 'ideas' ? colors.white : activeTheme.textSecondary} />
+                <Text style={[styles.sectionTabText, activeSectionTab === 'ideas' && styles.sectionTabTextActive]}>
+                  Ideas ({ideasCount})
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.sectionTabBtn, activeSectionTab === 'tasks' && styles.sectionTabBtnActive]}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setActiveSectionTab('tasks');
+                }}
+              >
+                <FolderKanban size={14} color={activeSectionTab === 'tasks' ? colors.white : activeTheme.textSecondary} />
+                <Text style={[styles.sectionTabText, activeSectionTab === 'tasks' && styles.sectionTabTextActive]}>
+                  Tareas ({tasksCount})
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.sectionTabBtn, activeSectionTab === 'links' && styles.sectionTabBtnActive]}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setActiveSectionTab('links');
+                }}
+              >
+                <ExternalLink size={14} color={activeSectionTab === 'links' ? colors.white : activeTheme.textSecondary} />
+                <Text style={[styles.sectionTabText, activeSectionTab === 'links' && styles.sectionTabTextActive]}>
+                  Enlaces ({linksCount})
+                </Text>
               </TouchableOpacity>
             </View>
 
@@ -789,21 +1007,23 @@ export default function App() {
               />
             </View>
 
-            <View style={{ height: 42, marginBottom: 14 }}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRowContent}>
-                {CATEGORIES.map(c => (
-                  <TouchableOpacity
-                    key={c}
-                    onPress={() => setSelectedCategory(c)}
-                    style={[styles.catChip, selectedCategory === c && styles.catChipActive]}
-                  >
-                    <Text style={[styles.catChipText, selectedCategory === c && styles.catChipTextActive]}>
-                      {c}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
+            {userCategories.length > 1 && (
+              <View style={{ height: 42, marginBottom: 14 }}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRowContent}>
+                  {userCategories.map(c => (
+                    <TouchableOpacity
+                      key={c}
+                      onPress={() => setSelectedCategory(c)}
+                      style={[styles.catChip, selectedCategory === c && styles.catChipActive]}
+                    >
+                      <Text style={[styles.catChipText, selectedCategory === c && styles.catChipTextActive]}>
+                        {c}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
 
             <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.sheetScroll}>
               {filteredIdeas.length === 0 ? (
@@ -816,7 +1036,15 @@ export default function App() {
                 </View>
               ) : (
                 filteredIdeas.map(item => (
-                  <View key={item.id} style={styles.ideaCard}>
+                  <TouchableOpacity
+                    key={item.id}
+                    style={styles.ideaCard}
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setSelectedDetailItem(item);
+                    }}
+                  >
                     <View style={styles.cardTop}>
                       <View style={styles.categoryBadge}>
                         <Text style={styles.categoryBadgeText}>{item.category}</Text>
@@ -826,37 +1054,150 @@ export default function App() {
                       </Text>
                     </View>
                     <Text style={styles.cardTitle}>{item.title}</Text>
-                    <Text style={styles.cardContent}>{item.content}</Text>
+                    <Text style={styles.cardContent} numberOfLines={2}>{item.content}</Text>
+                    
                     {item.url && (
-                      <TouchableOpacity style={styles.linkRow}>
+                      <TouchableOpacity
+                        style={styles.linkRow}
+                        onPress={() => Linking.openURL(item.url!)}
+                      >
                         <ExternalLink size={12} color={colors.primary} />
                         <Text style={styles.linkRowText} numberOfLines={1}>{item.url}</Text>
                       </TouchableOpacity>
                     )}
+                    
                     <View style={styles.cardBottom}>
-                      <View style={{ flexDirection: 'row', gap: 6 }}>
+                      <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', flex: 1 }}>
                         {item.tags.map(t => (
                           <Text key={t} style={styles.tagLabel}>#{t}</Text>
                         ))}
                       </View>
-                      <TouchableOpacity
-                        onPress={() => {
-                          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                          BlueAppService.createTask({
-                            title: item.title,
-                            description: item.content,
-                            projectId: projects[0]?.id || 'app-xprinta'
-                          });
-                        }}
-                        style={styles.blueBtn}
-                      >
-                        <FolderKanban size={12} color={colors.primary} />
-                        <Text style={styles.blueBtnText}>A Blue.app</Text>
-                      </TouchableOpacity>
+
+                      {item.type !== 'task' ? (
+                        <TouchableOpacity
+                          onPress={() => {
+                            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                            BlueAppService.createTask({
+                              title: item.title,
+                              description: item.content,
+                              projectId: projects[0]?.id || 'app-xprinta'
+                            });
+                          }}
+                          style={styles.blueBtn}
+                        >
+                          <FolderKanban size={12} color={colors.primary} />
+                          <Text style={styles.blueBtnText}>Convertir a Tarea</Text>
+                        </TouchableOpacity>
+                      ) : (
+                        <View style={styles.taskBadge}>
+                          <FolderKanban size={11} color="#34C759" />
+                          <Text style={styles.taskBadgeText}>En Blue.app</Text>
+                        </View>
+                      )}
                     </View>
-                  </View>
+                  </TouchableOpacity>
                 ))
               )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+            {/* Modal Detalle Completo de Idea / Tarea / Enlace */}
+      <Modal visible={!!selectedDetailItem} animationType="fade" transparent>
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.sheetContainer, { maxHeight: SCREEN_HEIGHT * 0.85 }]}>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
+              <View style={styles.sheetHeader}>
+                <View style={{ flex: 1, marginRight: 12 }}>
+                  <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center', marginBottom: 4 }}>
+                    <View style={styles.categoryBadge}>
+                      <Text style={styles.categoryBadgeText}>{selectedDetailItem?.category || 'General'}</Text>
+                    </View>
+                    {selectedDetailItem?.type === 'task' && (
+                      <View style={styles.taskBadge}>
+                        <FolderKanban size={11} color="#34C759" />
+                        <Text style={styles.taskBadgeText}>Tarea Blue.app</Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text style={styles.sheetTitle} numberOfLines={2}>{selectedDetailItem?.title}</Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.closeBtnCircle}
+                  onPress={() => setSelectedDetailItem(null)}
+                >
+                  <X size={18} color={colors.primary} />
+                </TouchableOpacity>
+              </View>
+
+              <Text style={styles.detailDateText}>
+                Registrado el {selectedDetailItem ? new Date(selectedDetailItem.createdAt).toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : ''}
+              </Text>
+
+              <Text style={styles.fieldLabel}>Contenido / Especificaciones</Text>
+              <View style={styles.detailContentBox}>
+                <Text style={styles.detailContentText}>{selectedDetailItem?.content}</Text>
+              </View>
+
+              {selectedDetailItem?.url && (
+                <View style={{ marginTop: 14 }}>
+                  <Text style={styles.fieldLabel}>Enlace de Referencia</Text>
+                  <TouchableOpacity
+                    style={styles.detailLinkCard}
+                    onPress={() => Linking.openURL(selectedDetailItem.url!)}
+                  >
+                    <ExternalLink size={16} color={colors.primary} />
+                    <Text style={styles.detailLinkText}>{selectedDetailItem.url}</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Etiquetas</Text>
+              <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
+                {selectedDetailItem?.tags.map(t => (
+                  <View key={t} style={styles.detailTagPill}>
+                    <Text style={styles.detailTagPillText}>#{t}</Text>
+                  </View>
+                ))}
+              </View>
+
+              <View style={{ flexDirection: 'row', gap: 12, marginTop: 10, marginBottom: 20 }}>
+                {selectedDetailItem?.type !== 'task' && (
+                  <TouchableOpacity
+                    style={styles.detailBlueBtn}
+                    onPress={() => {
+                      if (selectedDetailItem) {
+                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                        BlueAppService.createTask({
+                          title: selectedDetailItem.title,
+                          description: selectedDetailItem.content,
+                          projectId: projects[0]?.id || 'app-xprinta'
+                        });
+                        setSelectedDetailItem(null);
+                      }
+                    }}
+                  >
+                    <FolderKanban size={16} color={colors.white} />
+                    <Text style={styles.detailBlueBtnText}>Enviar a Blue.app</Text>
+                  </TouchableOpacity>
+                )}
+
+                <TouchableOpacity
+                  style={styles.detailDeleteBtn}
+                  onPress={async () => {
+                    if (selectedDetailItem) {
+                      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+                      const updated = await StorageService.deleteIdea(selectedDetailItem.id, currentUser?.id);
+                      setIdeas(updated);
+                      setSelectedDetailItem(null);
+                    }
+                  }}
+                >
+                  <Trash2 size={16} color={colors.error} />
+                  <Text style={styles.detailDeleteBtnText}>Eliminar</Text>
+                </TouchableOpacity>
+              </View>
             </ScrollView>
           </View>
         </View>
@@ -867,9 +1208,12 @@ export default function App() {
         <View style={styles.modalBackdrop}>
           <View style={styles.sheetContainer}>
             <View style={styles.sheetHeader}>
-              <Text style={styles.sheetTitle}>Nueva Nota / Enlace</Text>
-              <TouchableOpacity onPress={() => setAddModalVisible(false)}>
-                <X size={20} color={colors.n400} />
+              <Text style={[styles.sheetTitle, { flex: 1, marginRight: 12 }]} numberOfLines={1}>Nueva Nota / Enlace</Text>
+              <TouchableOpacity
+                style={styles.closeBtnCircle}
+                onPress={() => setAddModalVisible(false)}
+              >
+                <X size={18} color={colors.primary} />
               </TouchableOpacity>
             </View>
 
@@ -882,20 +1226,41 @@ export default function App() {
               onChangeText={setNewTitle}
             />
 
-            <Text style={styles.fieldLabel}>Categoría</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
-              {CATEGORIES.filter(c => c !== 'Todos').map(c => (
-                <TouchableOpacity
-                  key={c}
-                  onPress={() => setNewCategory(c)}
-                  style={[styles.catChip, newCategory === c && styles.catChipActive]}
-                >
-                  <Text style={[styles.catChipText, newCategory === c && styles.catChipTextActive]}>
-                    {c}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={styles.fieldLabel}>Categoría</Text>
+              <TouchableOpacity onPress={() => setIsAddingNewCat(!isAddingNewCat)}>
+                <Text style={{ color: colors.primary, fontSize: 12, fontFamily: typography.fontSans.semiBold }}>
+                  {isAddingNewCat ? 'Ver existentes' : '+ Nueva Categoría'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {isAddingNewCat ? (
+              <TextInput
+                placeholder="Nombre de la nueva categoría..."
+                placeholderTextColor={colors.n500}
+                style={[styles.fieldInput, { marginBottom: 12 }]}
+                value={customCategoryInput}
+                onChangeText={(val) => {
+                  setCustomCategoryInput(val);
+                  setNewCategory(val);
+                }}
+              />
+            ) : (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+                {userCategories.filter(c => c !== 'Todos').map(c => (
+                  <TouchableOpacity
+                    key={c}
+                    onPress={() => setNewCategory(c)}
+                    style={[styles.catChip, newCategory === c && styles.catChipActive]}
+                  >
+                    <Text style={[styles.catChipText, newCategory === c && styles.catChipTextActive]}>
+                      {c}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
 
             <Text style={styles.fieldLabel}>Enlace Externo (Instagram, Web...)</Text>
             <TextInput
@@ -930,9 +1295,12 @@ export default function App() {
           <View style={[styles.sheetContainer, { maxHeight: SCREEN_HEIGHT * 0.9 }]}>
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
             <View style={styles.sheetHeader}>
-              <Text style={styles.sheetTitle}>Perfil Corporativo & IA</Text>
-              <TouchableOpacity hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }} onPress={() => setSettingsVisible(false)}>
-                <X size={20} color={colors.n400} />
+              <Text style={[styles.sheetTitle, { flex: 1, marginRight: 12 }]} numberOfLines={1}>Perfil Corporativo & IA</Text>
+              <TouchableOpacity
+                style={styles.closeBtnCircle}
+                onPress={() => setSettingsVisible(false)}
+              >
+                <X size={18} color={colors.primary} />
               </TouchableOpacity>
             </View>
 
@@ -962,6 +1330,55 @@ export default function App() {
                 </TouchableOpacity>
               ))}
             </ScrollView>
+
+            {/* SECCIÓN APARIENCIA / TEMA (LIGHT DEFAULT | DARK | AUTO) */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8, marginTop: 4 }}>
+              <Sun size={15} color={colors.primary} />
+              <Text style={styles.fieldLabel}>Tema de la Aplicación</Text>
+            </View>
+            <View style={styles.themeSelectorRow}>
+              <TouchableOpacity
+                style={[styles.themeOptionBtn, themePref === 'light' && styles.themeOptionBtnActive]}
+                onPress={async () => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setThemePref('light');
+                  await ThemeService.setThemePreference('light');
+                }}
+              >
+                <Sun size={15} color={themePref === 'light' ? colors.white : activeTheme.textSecondary} />
+                <Text style={[styles.themeOptionText, themePref === 'light' && styles.themeOptionTextActive]}>
+                  Claro (Defecto)
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.themeOptionBtn, themePref === 'dark' && styles.themeOptionBtnActive]}
+                onPress={async () => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setThemePref('dark');
+                  await ThemeService.setThemePreference('dark');
+                }}
+              >
+                <Moon size={15} color={themePref === 'dark' ? colors.white : activeTheme.textSecondary} />
+                <Text style={[styles.themeOptionText, themePref === 'dark' && styles.themeOptionTextActive]}>
+                  Oscuro
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.themeOptionBtn, themePref === 'auto' && styles.themeOptionBtnActive]}
+                onPress={async () => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setThemePref('auto');
+                  await ThemeService.setThemePreference('auto');
+                }}
+              >
+                <Smartphone size={15} color={themePref === 'auto' ? colors.white : activeTheme.textSecondary} />
+                <Text style={[styles.themeOptionText, themePref === 'auto' && styles.themeOptionTextActive]}>
+                  Auto
+                </Text>
+              </TouchableOpacity>
+            </View>
 
             {/* SECCIÓN NAS WD MY CLOUD EX4100 (DATASET LLM) */}
             <View style={styles.nasHeaderBox}>
@@ -1038,10 +1455,10 @@ export default function App() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#050505',
+    backgroundColor: theme.bgApp,
     paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 28) + 8 : 0,
   },
   center: {
@@ -1079,38 +1496,38 @@ const styles = StyleSheet.create({
   loginTitle: {
     fontSize: 34,
     fontFamily: typography.fontSans.light,
-    color: colors.paper,
+    color: theme.textPrimary,
     letterSpacing: -0.5,
   },
   loginSubtitle: {
     fontSize: typography.sizes.bodySm,
-    color: colors.n400,
+    color: theme.textSecondary,
     marginTop: 6,
     lineHeight: 20,
   },
   loginCard: {
-    backgroundColor: '#0F0F0F',
+    backgroundColor: theme.sheetBg,
     borderRadius: radius.lg,
     padding: spacing.lg,
     borderWidth: 1,
-    borderColor: '#1E1E1E',
+    borderColor: theme.borderSubtle,
     marginBottom: spacing.xl,
   },
   inputWithIcon: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#161616',
+    backgroundColor: theme.bgInput,
     borderRadius: radius.md,
     paddingHorizontal: 12,
     marginTop: 6,
     borderWidth: 1,
-    borderColor: '#262626',
+    borderColor: theme.borderSubtle,
     height: 48,
   },
   textInputInside: {
     flex: 1,
     marginLeft: 10,
-    color: colors.paper,
+    color: theme.textPrimary,
     fontSize: 14,
   },
   errorBanner: {
@@ -1144,7 +1561,7 @@ const styles = StyleSheet.create({
   directoryTitle: {
     fontSize: 11,
     fontFamily: typography.fontSans.semiBold,
-    color: colors.n500,
+    color: theme.textMuted,
     letterSpacing: 1,
     textTransform: 'uppercase',
     marginBottom: 10,
@@ -1176,16 +1593,16 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   memberName: {
-    color: colors.paper,
+    color: theme.textPrimary,
     fontFamily: typography.fontSans.semiBold,
     fontSize: 13,
   },
   memberRole: {
-    color: colors.n500,
+    color: theme.textMuted,
     fontSize: 11,
   },
   pinPill: {
-    backgroundColor: '#161616',
+    backgroundColor: theme.bgInput,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: radius.pill,
@@ -1209,7 +1626,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   eyebrow: {
-    fontSize: 10,
+    fontSize: 12,
     fontFamily: typography.fontSans.semiBold,
     letterSpacing: 1.2,
     color: colors.primary,
@@ -1218,7 +1635,7 @@ const styles = StyleSheet.create({
   brandTitle: {
     fontSize: typography.sizes.h2,
     fontFamily: typography.fontSans.light,
-    color: colors.paper,
+    color: theme.textPrimary,
     letterSpacing: -0.5,
   },
   brandTitleAccent: {
@@ -1226,12 +1643,12 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
   userBadge: {
-    backgroundColor: '#161616',
+    backgroundColor: theme.bgInput,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: radius.pill,
     borderWidth: 1,
-    borderColor: '#262626',
+    borderColor: theme.borderSubtle,
   },
   userBadgeText: {
     color: colors.primary,
@@ -1239,14 +1656,19 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   settingsIconBtn: {
-    width: 38,
-    height: 38,
+    width: 40,
+    height: 40,
     borderRadius: radius.pill,
-    backgroundColor: '#111111',
+    backgroundColor: theme.glassPillBg,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#222222',
+    borderWidth: 1.5,
+    borderColor: theme.glassPillBorder,
+    shadowColor: theme.isDark ? '#000' : '#8A99AD',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: theme.isDark ? 0.3 : 0.12,
+    shadowRadius: 6,
+    elevation: 3,
   },
   quantumStage: {
     flex: 1,
@@ -1264,23 +1686,62 @@ const styles = StyleSheet.create({
   miniParticle: {
     position: 'absolute',
   },
-  quantumCore: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+  coreSwarmContainer: {
+    position: 'absolute',
+    width: 60,
+    height: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quantumAuraRing: {
+    position: 'absolute',
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     borderWidth: 1.5,
+    borderColor: 'rgba(241, 129, 8, 0.4)',
+    backgroundColor: 'rgba(241, 129, 8, 0.08)',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 16,
+  },
+  quantumCore: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
+    shadowOpacity: 0.95,
     shadowRadius: 16,
     elevation: 8,
   },
+  coreInnerRing: {
+    position: 'absolute',
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.45)',
+  },
+  coreEnergyOrb: {
+    position: 'absolute',
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOpacity: 1,
+    shadowRadius: 8,
+  },
   coreCenterDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
     backgroundColor: '#FFFFFF',
     shadowColor: '#FFFFFF',
     shadowOpacity: 1,
@@ -1294,8 +1755,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
   },
   statusText: {
-    fontSize: 14,
-    lineHeight: 22,
+    fontSize: 17,
+    lineHeight: 25,
     fontFamily: typography.fontSans.medium,
     color: colors.n300,
     textAlign: 'center',
@@ -1304,24 +1765,24 @@ const styles = StyleSheet.create({
   responseBubble: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(20, 20, 20, 0.95)',
-    borderRadius: 18,
+    backgroundColor: theme.statusBubbleBg,
+    borderRadius: 22,
     paddingHorizontal: 20,
     paddingVertical: 14,
     marginTop: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(241, 129, 8, 0.35)',
+    borderWidth: 1.5,
+    borderColor: theme.isDark ? 'rgba(241, 129, 8, 0.4)' : 'rgba(241, 129, 8, 0.25)',
     width: '100%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
-    elevation: 6,
+    shadowColor: theme.isDark ? '#000' : colors.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: theme.isDark ? 0.5 : 0.12,
+    shadowRadius: 16,
+    elevation: 8,
   },
   responseText: {
-    color: colors.paper,
-    fontSize: 14,
-    lineHeight: 21,
+    color: theme.textPrimary,
+    fontSize: 17,
+    lineHeight: 24,
     fontFamily: typography.fontSans.regular,
     textAlign: 'center',
     flex: 1,
@@ -1338,43 +1799,63 @@ const styles = StyleSheet.create({
   pillButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#111111',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    backgroundColor: theme.glassPillBg,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
     borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: '#222222',
+    borderWidth: 1.5,
+    borderColor: theme.glassPillBorder,
     gap: 8,
+    shadowColor: theme.isDark ? '#000' : '#8A99AD',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: theme.isDark ? 0.4 : 0.16,
+    shadowRadius: 12,
+    elevation: 6,
   },
   pillButtonText: {
-    color: colors.paper,
+    color: theme.textPrimary,
     fontFamily: typography.fontSans.semiBold,
-    fontSize: 13,
+    fontSize: 16,
+    letterSpacing: -0.2,
   },
   actionCircleBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 4,
+    borderWidth: 1.5,
+    borderColor: theme.glassFabBorder,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.5,
+    shadowRadius: 12,
+    elevation: 8,
   },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.85)',
+    backgroundColor: theme.isDark ? 'rgba(0,0,0,0.82)' : 'rgba(15,23,42,0.45)',
     justifyContent: 'flex-end',
+    alignItems: 'center',
   },
   sheetContainer: {
-    backgroundColor: '#0F0F0F',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: spacing.lg,
+    backgroundColor: theme.glassSheetBg,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    paddingHorizontal: 18,
     paddingTop: spacing.md,
     paddingBottom: spacing.xl,
     height: SCREEN_HEIGHT * 0.85,
-    borderTopWidth: 1,
-    borderColor: '#1F1F1F',
+    width: '100%',
+    maxWidth: SCREEN_WIDTH,
+    borderTopWidth: 1.5,
+    borderColor: theme.glassSheetBorder,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -8 },
+    shadowOpacity: theme.isDark ? 0.5 : 0.12,
+    shadowRadius: 20,
+    elevation: 12,
   },
   sheetHandleBar: {
     alignItems: 'center',
@@ -1389,26 +1870,42 @@ const styles = StyleSheet.create({
   sheetHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: spacing.md,
+    width: '100%',
   },
   sheetTitle: {
-    fontSize: typography.sizes.h2,
-    fontFamily: typography.fontSans.light,
-    color: colors.paper,
+    fontSize: 24,
+    fontFamily: typography.fontSans.medium,
+    color: theme.textPrimary,
+  },
+  closeBtnCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: theme.isDark ? 'rgba(241, 129, 8, 0.15)' : 'rgba(241, 129, 8, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: theme.isDark ? 'rgba(241, 129, 8, 0.35)' : 'rgba(241, 129, 8, 0.25)',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
   },
   profileBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#141414',
+    backgroundColor: theme.bgCard,
     padding: spacing.md,
     borderRadius: radius.md,
     marginBottom: spacing.md,
     borderWidth: 1,
-    borderColor: '#202020',
+    borderColor: theme.borderSubtle,
   },
   profileBoxName: {
-    color: colors.paper,
+    color: theme.textPrimary,
     fontFamily: typography.fontSans.semiBold,
     fontSize: 14,
   },
@@ -1418,7 +1915,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   profileBoxEmail: {
-    color: colors.n500,
+    color: theme.textMuted,
     fontSize: 11,
     marginTop: 2,
   },
@@ -1439,18 +1936,18 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#161616',
+    backgroundColor: theme.bgInput,
     paddingHorizontal: 12,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: '#222222',
+    borderColor: theme.borderSubtle,
     height: 40,
     marginBottom: spacing.sm,
   },
   searchInput: {
     flex: 1,
     marginLeft: 8,
-    color: colors.paper,
+    color: theme.textPrimary,
     fontFamily: typography.fontSans.regular,
     fontSize: 13,
   },
@@ -1463,10 +1960,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     height: 34,
     borderRadius: 17,
-    backgroundColor: '#161616',
+    backgroundColor: theme.bgInput,
     marginRight: 8,
     borderWidth: 1,
-    borderColor: '#2A2A2A',
+    borderColor: theme.borderStrong,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1477,7 +1974,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   emptyStateTitle: {
-    color: colors.n400,
+    color: theme.textSecondary,
     fontSize: 15,
     fontFamily: typography.fontSans.semiBold,
     marginBottom: 6,
@@ -1495,8 +1992,8 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
   },
   catChipText: {
-    fontSize: 11,
-    color: colors.n400,
+    fontSize: 13,
+    color: theme.textSecondary,
     fontFamily: typography.fontSans.medium,
   },
   catChipTextActive: {
@@ -1507,12 +2004,17 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   ideaCard: {
-    backgroundColor: '#141414',
-    borderRadius: radius.md,
+    backgroundColor: theme.glassCardBg,
+    borderRadius: 18,
     padding: spacing.md,
     marginBottom: spacing.sm,
-    borderWidth: 1,
-    borderColor: '#202020',
+    borderWidth: 1.5,
+    borderColor: theme.glassCardBorder,
+    shadowColor: theme.isDark ? '#000' : '#B0BAC9',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: theme.isDark ? 0.3 : 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
   cardTop: {
     flexDirection: 'row',
@@ -1528,37 +2030,41 @@ const styles = StyleSheet.create({
   },
   categoryBadgeText: {
     color: colors.primaryHover,
-    fontSize: 10,
+    fontSize: 12,
     fontFamily: typography.fontSans.semiBold,
   },
   cardDate: {
-    color: colors.n500,
+    color: theme.textMuted,
     fontSize: 10,
   },
   cardTitle: {
-    color: colors.paper,
-    fontSize: 14,
+    color: theme.textPrimary,
+    fontSize: 17,
     fontFamily: typography.fontSans.semiBold,
-    marginBottom: 2,
+    marginBottom: 4,
   },
   cardContent: {
-    color: colors.n300,
-    fontSize: 12,
-    lineHeight: 17,
+    color: theme.textSecondary,
+    fontSize: 14.5,
+    lineHeight: 20,
     marginBottom: 6,
   },
   linkRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#0A0A0A',
-    padding: 6,
-    borderRadius: 4,
+    backgroundColor: theme.bgInput,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: radius.sm,
     marginBottom: 6,
-    gap: 4,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: theme.borderSubtle,
   },
   linkRowText: {
     color: colors.primary,
     fontSize: 11,
+    fontFamily: typography.fontSans.medium,
     flex: 1,
   },
   cardBottom: {
@@ -1566,11 +2072,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: '#202020',
-    paddingTop: 6,
+    borderTopColor: theme.borderSubtle,
+    paddingTop: 8,
   },
   tagLabel: {
-    color: colors.n500,
+    color: theme.textMuted,
     fontSize: 10,
   },
   blueBtn: {
@@ -1584,19 +2090,19 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontSans.medium,
   },
   fieldLabel: {
-    color: colors.n400,
-    fontSize: 11,
+    color: theme.textSecondary,
+    fontSize: 13.5,
     fontFamily: typography.fontSans.semiBold,
     marginTop: spacing.xs,
     marginBottom: 4,
   },
   fieldInput: {
-    backgroundColor: '#161616',
+    backgroundColor: theme.bgInput,
     borderWidth: 1,
-    borderColor: '#262626',
+    borderColor: theme.borderSubtle,
     borderRadius: radius.md,
     padding: spacing.md,
-    color: colors.paper,
+    color: theme.textPrimary,
     marginBottom: spacing.xs,
   },
   primaryActionBtn: {
@@ -1615,21 +2121,21 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   nasHeaderTitle: {
-    color: colors.paper,
+    color: theme.textPrimary,
     fontFamily: typography.fontSans.semiBold,
     fontSize: 13,
   },
   btnSecondary: {
     flex: 1,
-    backgroundColor: '#1C1C1C',
+    backgroundColor: theme.chipBg,
     paddingVertical: 10,
     borderRadius: radius.sm,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#2A2A2A',
+    borderColor: theme.borderStrong,
   },
   btnSecondaryText: {
-    color: colors.paper,
+    color: theme.textPrimary,
     fontSize: 12,
     fontFamily: typography.fontSans.medium,
   },
@@ -1643,13 +2149,114 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     gap: 6,
   },
+  sectionTabsRow: {
+    flexDirection: 'row',
+    backgroundColor: theme.bgInput,
+    borderRadius: radius.md,
+    padding: 4,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: theme.borderSubtle,
+    gap: 4,
+  },
+  sectionTabBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    borderRadius: radius.sm,
+    gap: 6,
+  },
+  sectionTabBtnActive: {
+    backgroundColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  sectionTabText: {
+    fontSize: 14.5,
+    color: theme.textSecondary,
+    fontFamily: typography.fontSans.medium,
+  },
+  sectionTabTextActive: {
+    color: colors.white,
+    fontFamily: typography.fontSans.bold,
+  },
+  taskBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(52, 199, 89, 0.12)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+    gap: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(52, 199, 89, 0.25)',
+  },
+  taskBadgeText: {
+    color: '#34C759',
+    fontSize: 10,
+    fontFamily: typography.fontSans.bold,
+  },
+  detailDateText: {
+    color: theme.textMuted,
+    fontSize: 12,
+    fontFamily: typography.fontSans.regular,
+    marginBottom: 14,
+  },
+  detailContentBox: {
+    backgroundColor: theme.bgInput,
+    padding: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: theme.borderSubtle,
+    marginTop: 4,
+  },
+  detailContentText: {
+    color: theme.textPrimary,
+    fontSize: 17,
+    lineHeight: 25,
+    fontFamily: typography.fontSans.regular,
+  },
+  detailLinkCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.bgCard,
+    padding: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.primarySubtle,
+    gap: 10,
+  },
+  detailLinkText: {
+    color: colors.primary,
+    fontSize: 13,
+    fontFamily: typography.fontSans.medium,
+    flex: 1,
+  },
+  detailTagPill: {
+    backgroundColor: theme.bgInput,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: theme.borderSubtle,
+  },
+  detailTagPillText: {
+    color: theme.textSecondary,
+    fontSize: 12,
+    fontFamily: typography.fontSans.medium,
+  },
   btnSyncNasText: {
     color: colors.white,
     fontSize: 12,
     fontFamily: typography.fontSans.bold,
   },
   nasStatusCard: {
-    backgroundColor: '#121212',
+    backgroundColor: theme.bgInput,
     padding: 10,
     borderRadius: radius.sm,
     marginTop: 10,
@@ -1660,9 +2267,82 @@ const styles = StyleSheet.create({
     color: colors.n300,
     fontSize: 11,
   },
+  detailBlueBtn: {
+    flex: 1.2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
+    paddingVertical: 13,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    gap: 8,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 4,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
+  },
+  detailBlueBtnText: {
+    color: colors.white,
+    fontFamily: typography.fontSans.bold,
+    fontSize: 14.5,
+    letterSpacing: -0.2,
+  },
+  detailDeleteBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.isDark ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.1)',
+    paddingVertical: 13,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    gap: 6,
+    borderWidth: 1.5,
+    borderColor: theme.isDark ? 'rgba(239, 68, 68, 0.35)' : 'rgba(239, 68, 68, 0.25)',
+  },
+  detailDeleteBtnText: {
+    color: colors.error,
+    fontFamily: typography.fontSans.bold,
+    fontSize: 14.5,
+  },
   primaryActionBtnText: {
     color: colors.white,
     fontFamily: typography.fontSans.bold,
     fontSize: 14,
+  },
+  themeSelectorRow: {
+    flexDirection: 'row',
+    backgroundColor: theme.bgInput,
+    borderRadius: radius.md,
+    padding: 3,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: theme.borderSubtle,
+    gap: 4,
+  },
+  themeOptionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    borderRadius: radius.sm,
+    gap: 6,
+  },
+  themeOptionBtnActive: {
+    backgroundColor: colors.primary,
+  },
+  themeOptionText: {
+    fontSize: 14,
+    color: theme.textSecondary,
+    fontFamily: typography.fontSans.medium,
+  },
+  themeOptionTextActive: {
+    color: colors.white,
+    fontFamily: typography.fontSans.bold,
   },
 });
