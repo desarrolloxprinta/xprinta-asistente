@@ -7,14 +7,16 @@ const STORAGE_KEY_MODEL = '@xprinta_openrouter_model';
 const DEFAULT_KEY = ['sk', 'or', 'v1', '3a0235984bd696dbfe32d4a662dc13dff3ab5576d216419160bc74af2ceec880'].join('-');
 const DEFAULT_MODEL = 'openai/gpt-4o-mini';
 
-export interface ExtractedTaskData {
-  title: string;
-  description: string;
-  assignedToName?: string; // e.g. "Jorge Rodríguez", "Sergio", "Carlos", "Ruy", "Jonathan", "Lourdes", etc.
-  assignedUserId?: string; // Blue.app user ID
+export interface TaskDraft {
+  title?: string;
+  description?: string;
+  assignedToName?: string;
+  assignedUserId?: string;
+  dueDateText?: string;
   dueDateISO?: string;
   tags?: string[];
   workspaceName?: string;
+  workspaceId?: string;
 }
 
 export interface OpenRouterResponse {
@@ -23,9 +25,9 @@ export interface OpenRouterResponse {
   suggestedCategory: 'Rótulos' | 'Diseño' | 'Comercial' | 'Producción';
   extractedTitle?: string;
   extractedUrl?: string;
-  needsClarification?: boolean;
-  clarificationQuestion?: string;
-  extractedTask?: ExtractedTaskData;
+  isTaskComplete?: boolean; // True solo cuando tiene todos los campos clave
+  missingFields?: Array<'assignee' | 'description' | 'workspace' | 'dueDate'>;
+  extractedTask?: TaskDraft;
 }
 
 export class OpenRouterService {
@@ -48,12 +50,14 @@ export class OpenRouterService {
   }
 
   /**
-   * Procesa la voz con inteligencia contextual profunda, identificando responsables y detalles
+   * Procesa la voz con inteligencia conversacional iterativa para completar campos al 100%
    */
   static async chatWithAssistant(
     userMessage: string,
     currentUser?: UserProfile | null,
-    teamMembersList?: Array<{ name: string; blueUserId?: string; role: string }>
+    teamMembersList?: Array<{ name: string; blueUserId?: string; role: string }>,
+    workspacesList?: Array<{ id: string; name: string }>,
+    currentTaskDraft?: TaskDraft | null
   ): Promise<OpenRouterResponse> {
     const apiKey = await this.getApiKey();
     const model = await this.getModel();
@@ -73,58 +77,72 @@ export class OpenRouterService {
 - Lourdes Benavides (Contabilidad) [ID: cm74v31oo1ijir92lwn0yhiiy]
 - Martina G Morante (Video) [ID: ckkmb8xtdh0280834zscatfew]`;
 
+    const workspacesContext = workspacesList && workspacesList.length > 0
+      ? workspacesList.map(w => `- ${w.name} (ID/slug: ${w.id})`).join('\n')
+      : `- App Xprinta (app-xprinta)
+- Xprinta.com proyectos (xprinta-proyectos)
+- Signeo.es (signeo-web)
+- Intranet Puntos Xprinta (puntos-xprinta-intranet)`;
+
     const currentUserContext = currentUser
-      ? `Usuario hablando actualmente: ${currentUser.name} (${currentUser.role}, Email: ${currentUser.email}, Blue ID: ${currentUser.blueUserId || 'sin ID'}).`
+      ? `Usuario hablando actualmente: ${currentUser.name} (${currentUser.role}, Blue ID: ${currentUser.blueUserId || 'N/A'}).`
       : 'Usuario actual: Miembro de Xprinta.';
 
-    const systemPrompt = `Eres el Asistente Inteligente de Voz de XPRINTA, empresa líder en rotulación corporativa, señalética para franquicias, diseño y producción industrial de publicidad exterior.
+    const draftContext = currentTaskDraft
+      ? `ESTADO ACTUAL DEL BORRADOR DE TAREA EN CURSO:
+- Título: ${currentTaskDraft.title || 'Pendiente'}
+- Responsable: ${currentTaskDraft.assignedToName || 'NO DEFINIDO'}
+- Descripción: ${currentTaskDraft.description || 'NO DEFINIDA'}
+- Plazo/Vencimiento: ${currentTaskDraft.dueDateText || 'NO DEFINIDO'}
+- Workspace: ${currentTaskDraft.workspaceName || 'NO DEFINIDO'}
+- Etiquetas: ${(currentTaskDraft.tags || []).join(', ') || 'Pendiente'}`
+      : 'No hay borrador previo en curso.';
+
+    const systemPrompt = `Eres el Asistente Inteligente de Voz de XPRINTA, especializado en gestión de proyectos en Blue.app, rotulación, señalética de franquicias, diseño y producción industrial.
 
 ${currentUserContext}
 
-EQUIPO OFICIAL DE XPRINTA EN BLUE.APP:
+EQUIPO OFICIAL EN BLUE.APP:
 ${teamContext}
 
-REGLAS DE CLASIFICACIÓN Y ANÁLISIS DE CONTEXTO:
+WORKSPACES DISPONIBLES EN BLUE.APP:
+${workspacesContext}
 
-1. "conversation":
-   - Saludos ("hola", "buenos días"), comprobaciones de audio ("me escuchas?"), agradecimientos o preguntas informales.
-   - ACCIÓN: Responde con máxima cercanía, simpatía, calidez y brevedad (1 o 2 frases). NO crees tareas ni guardes ideas.
+${draftContext}
 
-2. "link":
-   - El usuario menciona una referencia que vio en una red social o web (Instagram, TikTok, Pinterest, YouTube, etc.) o comparte una URL.
-   - ACCIÓN: Identifica la red o extrae el enlace si lo hay, genera un título claro ("Referencia Instagram: Rótulo Neón") y clasifícalo en Diseño o Rótulos.
+DIRECTRICES PARA TAREAS DE BLUE.APP (MUY IMPORTANTE):
+1. Si el usuario pide crear una tarea pero la información es escueta (falta responsable específico, descripción técnica, plazo o workspace):
+   - NO autoasignes a la ligera.
+   - PREGUNTA al usuario en 'replyText' con voz natural y ejecutiva para que te aclare el dato faltante (ej: "¿Para quién es la tarea y para cuándo la necesitas?", o "¿En qué proyecto o workspace la ubicamos?").
+   - Pon "isTaskComplete": false y lista en "missingFields" los campos que faltan.
 
-3. "task":
-   - El usuario pide una ACCIÓN OPERATIVA, PEDIDO DE MATERIAL, FABRICACIÓN, PRESUPUESTO, MONTAJE O SEGUIMIENTO.
-   - ASIGNACIÓN INTELIGENTE:
-     * Si el usuario dice explícitamente para quién es (ej: "tarea para Jorge", "avisa a Carlos que diseñe", "decirle a Ruy"): ASIGNA a ese miembro exacto identificando su 'assignedUserId' y 'assignedToName'.
-     * Si NO menciona a otra persona, la tarea es PERSONAL para el usuario que está hablando (${currentUser?.name || 'el usuario actual'}), asignándole su ID: "${currentUser?.blueUserId || ''}".
-   - DETALLES TÉCNICOS:
-     * Genera un título limpio y profesional para Blue.app (máximo 6 palabras).
-     * En 'description', redacta los detalles técnicos completos (materiales, medidas, especificaciones de taller, etc.).
-     * Extrae 'tags' temáticas (ej: ["Producción", "Urgente", "Diseño"]).
+2. Si el usuario ya proporcionó o completó los datos (o te responde a la pregunta previa completando el responsable, plazo o descripción):
+   - Consolida el borrador.
+   - Si ya tiene responsable y descripción básica, pon "isTaskComplete": true y en 'replyText' confirma con voz natural la creación completa (ej: "Perfecto, he creado la tarea en Blue.app para Jorge con fecha para este viernes.").
 
-4. "idea":
-   - Notas mentales, observaciones creativas o inspiración conceptual sin requerir una orden de trabajo inmediata.
-   - ACCIÓN: Guárdala como concepto de diseño/producción.
+3. Para saludos o charla informal ("hola", "me escuchas"):
+   - "type": "conversation", responde amistosamente y NO crees tareas.
 
-PAUTAS DE RESPUESTA:
-- Responde de forma muy humana, natural y concisa (1 o 2 frases fluidas para que el usuario las escuche por voz con ElevenLabs).
-- Confirma a quién se le asigna la tarea en la locución (ej: "He creado la tarea para Jorge y se la he asignado en Blue.app con los detalles técnicos.").
+4. Para referencias de redes o links:
+   - "type": "link".
 
 DEBES responder ÚNICAMENTE un objeto JSON válido con esta estructura:
 {
   "type": "conversation" | "task" | "idea" | "link",
-  "replyText": "Respuesta conversacional hablada, clara y humana confirmando la acción y responsable",
+  "replyText": "Respuesta conversacional hablada, clara y humana",
   "suggestedCategory": "Rótulos" | "Diseño" | "Comercial" | "Producción",
-  "extractedTitle": "Título claro de la idea, referencia o tarea",
-  "extractedUrl": "URL o red social identificada si aplica",
+  "isTaskComplete": false,
+  "missingFields": ["assignee", "dueDate", "workspace", "description"],
+  "extractedTitle": "Título claro de la idea o tarea",
   "extractedTask": {
-    "title": "Título de la tarea para Blue.app",
-    "description": "Detalles técnicos completos para el equipo",
-    "assignedToName": "Nombre del miembro asignado",
-    "assignedUserId": "ID de Blue.app del miembro asignado",
-    "tags": ["Producción", "Rótulos"]
+    "title": "Título claro de la tarea",
+    "description": "Detalles técnicos completos",
+    "assignedToName": "Nombre del asignado (ej: Jorge Rodríguez)",
+    "assignedUserId": "ID de Blue.app si se detectó",
+    "dueDateText": "Texto del plazo (ej: este viernes, 25 de agosto)",
+    "workspaceName": "Nombre del workspace si se indicó",
+    "workspaceId": "ID del workspace si se indicó",
+    "tags": ["Producción", "Urgente"]
   }
 }`;
 
@@ -156,48 +174,35 @@ DEBES responder ÚNICAMENTE un objeto JSON válido con esta estructura:
       const content = data.choices?.[0]?.message?.content || '{}';
       const parsed = JSON.parse(content);
 
-      // Si es una tarea y no se detectó el assignedUserId pero sí el assignedToName, resolverlo
       if (parsed.type === 'task' && parsed.extractedTask) {
-        if (!parsed.extractedTask.assignedUserId) {
-          if (parsed.extractedTask.assignedToName && teamMembersList) {
-            const match = teamMembersList.find(m => 
-              m.name.toLowerCase().includes(parsed.extractedTask.assignedToName.toLowerCase()) ||
-              parsed.extractedTask.assignedToName.toLowerCase().includes(m.name.toLowerCase())
-            );
-            if (match && match.blueUserId) {
-              parsed.extractedTask.assignedUserId = match.blueUserId;
-            }
-          }
-          if (!parsed.extractedTask.assignedUserId && currentUser?.blueUserId) {
-            parsed.extractedTask.assignedUserId = currentUser.blueUserId;
-            parsed.extractedTask.assignedToName = currentUser.name;
+        // Resolver ID del asignado si vino por nombre
+        if (!parsed.extractedTask.assignedUserId && parsed.extractedTask.assignedToName && teamMembersList) {
+          const match = teamMembersList.find(m => 
+            m.name.toLowerCase().includes(parsed.extractedTask.assignedToName.toLowerCase()) ||
+            parsed.extractedTask.assignedToName.toLowerCase().includes(m.name.toLowerCase())
+          );
+          if (match && match.blueUserId) {
+            parsed.extractedTask.assignedUserId = match.blueUserId;
           }
         }
       }
 
       return {
         type: parsed.type || 'conversation',
-        replyText: parsed.replyText || '¡Te escucho perfectamente! ¿En qué puedo ayudarte hoy?',
+        replyText: parsed.replyText || '¡Te escucho! ¿En qué te ayudo?',
         suggestedCategory: parsed.suggestedCategory || 'Rótulos',
         extractedTitle: parsed.extractedTitle,
         extractedUrl: parsed.extractedUrl,
+        isTaskComplete: parsed.isTaskComplete ?? true,
+        missingFields: parsed.missingFields,
         extractedTask: parsed.type === 'task' ? parsed.extractedTask : undefined,
       };
     } catch (error) {
-      console.warn('OpenRouter fallback notice:', error);
-      const lower = userMessage.toLowerCase();
-      if (lower.includes('hola') || lower.includes('escuchas') || lower.includes('prueba') || lower.includes('que tal')) {
-        return {
-          type: 'conversation',
-          replyText: '¡Hola! Te escucho alto y claro. Dime qué tarea, idea o referencia quieres gestionar.',
-          suggestedCategory: 'Rótulos',
-        };
-      }
+      console.warn('OpenRouter fallback:', error);
       return {
-        type: 'idea',
-        replyText: 'Entendido, lo he registrado en tu repositorio.',
+        type: 'conversation',
+        replyText: 'Te escucho. Dime qué tarea quieres crear o para quién es.',
         suggestedCategory: 'Rótulos',
-        extractedTitle: userMessage.slice(0, 35),
       };
     }
   }

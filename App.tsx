@@ -55,7 +55,7 @@ import { IdeaItem, IdeaCategory, UserProfile } from './src/types';
 import { StorageService } from './src/services/storage';
 import { ElevenLabsService } from './src/services/elevenlabs';
 import { BlueAppService } from './src/services/blueapp';
-import { OpenRouterService } from './src/services/openrouter';
+import { OpenRouterService, TaskDraft } from './src/services/openrouter';
 import { NasSyncService } from './src/services/nasSync';
 import { AuthService, XPRINTA_AUTHORIZED_MEMBERS } from './src/services/auth';
 import { SpeechService } from './src/services/speechService';
@@ -128,6 +128,7 @@ export default function App() {
   const [isProcessingAI, setIsProcessingAI] = useState(false);
   const [voiceStatus, setVoiceStatus] = useState<string>('Toca el campo cuántico para hablar');
   const [assistantResponse, setAssistantResponse] = useState<string>('');
+  const [activeTaskDraft, setActiveTaskDraft] = useState<TaskDraft | null>(null);
 
   // Animations
   const rotationAnim = useRef(new Animated.Value(0)).current;
@@ -255,10 +256,14 @@ export default function App() {
 
     try {
       const members = await AuthService.getMembers();
+      const workspaces = projects.map(p => ({ id: p.id, name: p.name }));
+      
       const aiResponse = await OpenRouterService.chatWithAssistant(
         speechText,
         currentUser,
-        members
+        members,
+        workspaces,
+        activeTaskDraft
       );
       
       setIsProcessingAI(false);
@@ -273,21 +278,71 @@ export default function App() {
         return;
       }
 
+      // 3. Manejo interactivo de Tareas de Blue.app
+      if (aiResponse.type === 'task' && aiResponse.extractedTask) {
+        const mergedDraft: TaskDraft = {
+          ...(activeTaskDraft || {}),
+          ...aiResponse.extractedTask,
+        };
+
+        // Si faltan datos clave, mantenemos el borrador activo y le pedimos al usuario que responda
+        if (aiResponse.isTaskComplete === false) {
+          setActiveTaskDraft(mergedDraft);
+          setVoiceStatus(`⏳ Completando ficha de tarea...`);
+          return;
+        }
+
+        // Tarea Completa al 100% -> Publicar en Blue.app
+        setActiveTaskDraft(null);
+        setVoiceStatus(`✓ Tarea creada para ${mergedDraft.assignedToName || 'el equipo'}`);
+
+        const targetWorkspace = mergedDraft.workspaceId || projects[0]?.id || 'app-xprinta';
+        const targetUserId = mergedDraft.assignedUserId;
+
+        await BlueAppService.createTask({
+          title: mergedDraft.title || speechText.slice(0, 45),
+          description: mergedDraft.description || speechText,
+          projectId: targetWorkspace,
+          assigneeIds: targetUserId ? [targetUserId] : undefined,
+          tags: (mergedDraft.tags || [aiResponse.suggestedCategory]).map(t => ({
+            title: t,
+            color: '#F18108'
+          })),
+        });
+
+        // Guardar también en el historial local
+        const newIdea: IdeaItem = {
+          id: Date.now().toString(),
+          title: mergedDraft.title || speechText.slice(0, 45),
+          content: `${mergedDraft.description || speechText}
+
+• Asignado a: ${mergedDraft.assignedToName || 'Equipo'}
+• Proyecto: ${mergedDraft.workspaceName || 'Xprinta'}
+• Plazo: ${mergedDraft.dueDateText || 'Sin fecha'}`,
+          category: aiResponse.suggestedCategory,
+          type: 'task',
+          tags: [`Tarea (${mergedDraft.assignedToName || 'Equipo'})`, aiResponse.suggestedCategory, 'Blue.app'],
+          createdAt: new Date().toISOString(),
+          syncedWithBlueApp: true,
+        };
+        const updated = await StorageService.saveIdea(newIdea);
+        setIdeas(updated);
+        return;
+      }
+
+      // 4. Si es idea o referencia de link
+      const isLinkMode = aiResponse.type === 'link';
       setVoiceStatus(aiResponse.extractedTitle ? `✓ ${aiResponse.suggestedCategory}` : '');
 
-      // 3. Si es idea, tarea o referencia de enlace, la guardamos en el repositorio local
-      const isTaskMode = aiResponse.type === 'task' && !!aiResponse.extractedTask;
-      const isLinkMode = aiResponse.type === 'link';
-      
       const newIdea: IdeaItem = {
         id: Date.now().toString(),
         title: aiResponse.extractedTitle || speechText.slice(0, 45),
         content: speechText,
         category: aiResponse.suggestedCategory,
-        type: isTaskMode ? 'task' : (isLinkMode ? 'link' : 'voice_memo'),
+        type: isLinkMode ? 'link' : 'voice_memo',
         url: aiResponse.extractedUrl || (isLinkMode ? speechText : undefined),
         tags: [
-          isTaskMode ? `Tarea (${aiResponse.extractedTask?.assignedToName || (currentUser ? currentUser.name : 'Asignado')})` : (isLinkMode ? 'Referencia Redes' : 'Idea'),
+          isLinkMode ? 'Referencia Redes' : 'Idea',
           aiResponse.suggestedCategory,
           'Voz'
         ],
@@ -296,22 +351,6 @@ export default function App() {
 
       const updated = await StorageService.saveIdea(newIdea);
       setIdeas(updated);
-
-      // 4. Si es tarea de trabajo, crearla en Blue.app con asignación y detalles completos
-      if (isTaskMode && aiResponse.extractedTask) {
-        const targetUserId = aiResponse.extractedTask.assignedUserId || (currentUser ? currentUser.blueUserId : undefined);
-        
-        await BlueAppService.createTask({
-          title: aiResponse.extractedTask.title,
-          description: aiResponse.extractedTask.description,
-          projectId: projects[0]?.id || 'app-xprinta',
-          assigneeIds: targetUserId ? [targetUserId] : undefined,
-          tags: (aiResponse.extractedTask.tags || [aiResponse.suggestedCategory]).map(t => ({
-            title: t,
-            color: '#F18108'
-          })),
-        });
-      }
     } catch (err) {
       setIsProcessingAI(false);
       setVoiceStatus('Toca para hablar');
