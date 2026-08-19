@@ -270,15 +270,22 @@ export default function App() {
 
       setVoiceStatus(aiResponse.extractedTitle ? `✓ ${aiResponse.suggestedCategory}` : '');
 
-      // 3. Si es idea o tarea, la guardamos en el repositorio local
+      // 3. Si es idea, tarea o referencia de enlace, la guardamos en el repositorio local
       const isTaskMode = aiResponse.type === 'task' && !!aiResponse.extractedTask;
+      const isLinkMode = aiResponse.type === 'link';
+      
       const newIdea: IdeaItem = {
         id: Date.now().toString(),
-        title: aiResponse.extractedTitle || speechText.slice(0, 35),
+        title: aiResponse.extractedTitle || speechText.slice(0, 45),
         content: speechText,
         category: aiResponse.suggestedCategory,
-        type: isTaskMode ? 'task' : 'voice_memo',
-        tags: [isTaskMode ? 'Tarea Blue.app' : 'Idea', aiResponse.suggestedCategory, 'Voz'],
+        type: isTaskMode ? 'task' : (isLinkMode ? 'link' : 'voice_memo'),
+        url: aiResponse.extractedUrl || (isLinkMode ? speechText : undefined),
+        tags: [
+          isTaskMode ? 'Tarea Blue.app' : (isLinkMode ? 'Referencia Redes' : 'Idea'),
+          aiResponse.suggestedCategory,
+          'Voz'
+        ],
         createdAt: new Date().toISOString(),
       };
 
@@ -328,7 +335,7 @@ export default function App() {
         (text) => {
           if (text) {
             setLiveTranscript(text);
-            setVoiceStatus(`"${text.slice(0, 42)}..."`);
+            setVoiceStatus(`"${text}"`);
           }
         },
         async (finalText) => {
@@ -1185,41 +1192,44 @@ const styles = StyleSheet.create({
   },
   statusBox: {
     position: 'absolute',
-    bottom: 40,
+    bottom: 24,
+    width: SCREEN_WIDTH - 32,
     alignItems: 'center',
-    paddingHorizontal: spacing.xl,
+    paddingHorizontal: spacing.sm,
   },
   statusText: {
-    fontSize: typography.sizes.caption,
+    fontSize: 14,
+    lineHeight: 22,
     fontFamily: typography.fontSans.medium,
-    color: colors.n400,
-    letterSpacing: 0.5,
+    color: colors.n300,
     textAlign: 'center',
+    maxWidth: '100%',
   },
   responseBubble: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(24, 24, 24, 0.92)',
-    borderRadius: 16,
-    paddingHorizontal: 18,
+    backgroundColor: 'rgba(20, 20, 20, 0.95)',
+    borderRadius: 18,
+    paddingHorizontal: 20,
     paddingVertical: 14,
-    marginTop: 16,
+    marginTop: 12,
     borderWidth: 1,
-    borderColor: 'rgba(241, 129, 8, 0.25)',
-    maxWidth: SCREEN_WIDTH * 0.90,
+    borderColor: 'rgba(241, 129, 8, 0.35)',
+    width: '100%',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 6,
   },
   responseText: {
     color: colors.paper,
     fontSize: 14,
-    lineHeight: 20,
+    lineHeight: 21,
     fontFamily: typography.fontSans.regular,
     textAlign: 'center',
     flex: 1,
+    flexWrap: 'wrap',
   },
   bottomBar: {
     flexDirection: 'row',
