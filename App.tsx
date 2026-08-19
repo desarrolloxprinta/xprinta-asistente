@@ -258,9 +258,20 @@ export default function App() {
       
       setIsProcessingAI(false);
       setAssistantResponse(aiResponse.replyText);
+
+      // 1. Respuesta hablada inmediata y clara
+      await ElevenLabsService.speakText(aiResponse.replyText);
+
+      // 2. Si es conversación o saludo casual, NO guardamos como tarea ni idea
+      if (aiResponse.type === 'conversation') {
+        setVoiceStatus('Conversación activa');
+        return;
+      }
+
       setVoiceStatus(aiResponse.extractedTitle ? `✓ ${aiResponse.suggestedCategory}` : '');
 
-      const isTaskMode = !!aiResponse.extractedTask;
+      // 3. Si es idea o tarea, la guardamos en el repositorio local
+      const isTaskMode = aiResponse.type === 'task' && !!aiResponse.extractedTask;
       const newIdea: IdeaItem = {
         id: Date.now().toString(),
         title: aiResponse.extractedTitle || speechText.slice(0, 35),
@@ -274,7 +285,8 @@ export default function App() {
       const updated = await StorageService.saveIdea(newIdea);
       setIdeas(updated);
 
-      if (aiResponse.extractedTask) {
+      // 4. Si es tarea de trabajo, crearla en Blue.app
+      if (isTaskMode && aiResponse.extractedTask) {
         await BlueAppService.createTask({
           title: aiResponse.extractedTask.title,
           description: aiResponse.extractedTask.description,
@@ -282,9 +294,6 @@ export default function App() {
           assigneeId: currentUser?.blueUserId,
         });
       }
-
-      // Friendly voice playback
-      await ElevenLabsService.speakText(aiResponse.replyText);
     } catch (err) {
       setIsProcessingAI(false);
       setVoiceStatus('Toca para hablar');

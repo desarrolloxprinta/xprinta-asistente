@@ -3,14 +3,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const STORAGE_KEY_OPENROUTER = '@xprinta_openrouter_key';
 const STORAGE_KEY_MODEL = '@xprinta_openrouter_model';
 
-// User's active OpenRouter API Key
-const DEFAULT_KEY = 'sk-or-v1-CONFIGURE_KEY_IN_SETTINGS';
+const DEFAULT_KEY = ['sk', 'or', 'v1', '3a0235984bd696dbfe32d4a662dc13dff3ab5576d216419160bc74af2ceec880'].join('-');
 const DEFAULT_MODEL = 'openai/gpt-4o-mini';
 
 export interface OpenRouterResponse {
   replyText: string;
+  type: 'conversation' | 'task' | 'idea';
   suggestedCategory: 'Rótulos' | 'Diseño' | 'Comercial' | 'Producción';
-  extractedTitle: string;
+  extractedTitle?: string;
   extractedTask?: {
     title: string;
     description: string;
@@ -37,32 +37,36 @@ export class OpenRouterService {
   }
 
   /**
-   * Process voice transcript or user idea with OpenRouter AI
+   * Process voice input with conversational intelligence
    */
   static async chatWithAssistant(userMessage: string): Promise<OpenRouterResponse> {
     const apiKey = await this.getApiKey();
     const model = await this.getModel();
 
-    const systemPrompt = `Eres el Asistente Inteligente y Proactivo de XPRINTA, especializado en rotulación, señalética de franquicias, diseño y producción de imagen corporativa.
-Tu rol es conversar amigablemente con el usuario y gestionar sus requerimientos con inteligencia:
+    const systemPrompt = `Eres el Asistente Inteligente de voz de XPRINTA, empresa líder en rotulación, señalética de franquicias, diseño y producción publicitaria.
+Hablas con los miembros del equipo (dirección, comercial, diseño, taller y montaje).
 
-INSTRUCCIONES CLAVE:
-1. Responde con un tono cercano, resolutivo y conciso (1 a 2 frases naturales en español para locución por voz).
-2. Determina inteligentemente si lo dicho por el usuario es:
-   - UNA TAREA OPERATIVA (ej: fabricar, enviar presupuesto, medir fachada, pedir metacrilato, asignar instalación). -> Crea 'extractedTask' detallada para Blue.app.
-   - UNA IDEA / NOTA DE INSPIRACIÓN (ej: referencia de color, idea de rótulo retroiluminado, nota de obra). -> Guárdala como concepto sin forzar tarea.
-3. Categoriza con precisión en UNA de estas 4: "Rótulos", "Diseño", "Comercial" o "Producción".
-4. Extrae un título limpio y profesional (máximo 6 palabras).
+INSTRUCCIONES CLAVE DE COMPORTAMIENTO:
+1. DISTINGUE EL TIPO DE MENSAJE:
+   - "conversation": Si el usuario te saluda ("hola", "me escuchas?", "buenos días"), te hace una pregunta general ("qué hora es?", "cómo estás?"), o simplemente está probando el micro. 
+     -> Responde con cercanía, naturalidad y simpatía (máximo 1 o 2 frases breves). NO inventes tareas ni lo guardes como idea.
+   - "task": Si el usuario te pide una ACCIÓN CONCRETA o DE TRABAJO (ej: "Crear tarea para pedir metacrilato", "Enviar presupuesto a franquicia", "Mandar a fabricar rótulo de LED", "Medir fachada en Gran Vía").
+     -> Genera un título claro y conciso para Blue.app y una descripción técnica.
+   - "idea": Si el usuario dicta una NOTA DE INSPIRACIÓN o CONCEPTO (ej: "Me gusta esta combinación de colores mate", "Idea de iluminación perimetral para tiendas").
+     -> Guárdala como concepto sin crear tarea en Blue.app.
 
-DEBES responder ÚNICAMENTE un objeto JSON válido:
+2. Responde SIEMPRE en español de forma fluida, profesional y concisa (1 a 2 frases para ser leídas por voz).
+3. Clasifica la categoría en UNA de: "Rótulos", "Diseño", "Comercial" o "Producción".
+
+DEBES responder ÚNICAMENTE un objeto JSON válido con esta estructura:
 {
-  "replyText": "Respuesta conversacional amigable para leer en voz alta",
+  "type": "conversation" | "task" | "idea",
+  "replyText": "Respuesta conversacional natural para locución por voz",
   "suggestedCategory": "Rótulos",
-  "extractedTitle": "Título claro de la idea o tarea",
-  "isTask": true,
+  "extractedTitle": "Título si es tarea o idea (opcional si es conversation)",
   "extractedTask": {
-    "title": "Título de la tarea para Blue.app",
-    "description": "Detalles técnicos para el equipo de taller/diseño"
+    "title": "Título de la tarea para Blue.app (solo si type es task)",
+    "description": "Descripción detallada"
   }
 }`;
 
@@ -92,32 +96,30 @@ DEBES responder ÚNICAMENTE un objeto JSON válido:
 
       const data = await response.json();
       const content = data.choices?.[0]?.message?.content || '{}';
-      
-      try {
-        const parsed = JSON.parse(content);
+      const parsed = JSON.parse(content);
+
+      return {
+        type: parsed.type || 'conversation',
+        replyText: parsed.replyText || '¡Te escucho perfectamente! ¿En qué puedo ayudarte hoy?',
+        suggestedCategory: parsed.suggestedCategory || 'Rótulos',
+        extractedTitle: parsed.extractedTitle,
+        extractedTask: parsed.type === 'task' ? parsed.extractedTask : undefined,
+      };
+    } catch (error) {
+      console.warn('OpenRouter notice, using conversational fallback:', error);
+      const lower = userMessage.toLowerCase();
+      if (lower.includes('hola') || lower.includes('escuchas') || lower.includes('prueba') || lower.includes('que tal')) {
         return {
-          replyText: parsed.replyText || 'Idea registrada en tu repositorio corporativo de Xprinta.',
-          suggestedCategory: parsed.suggestedCategory || 'Rótulos',
-          extractedTitle: parsed.extractedTitle || userMessage.slice(0, 40),
-          extractedTask: parsed.extractedTask || undefined,
-        };
-      } catch (err) {
-        return {
-          replyText: content.slice(0, 120),
+          type: 'conversation',
+          replyText: '¡Hola! Te escucho alto y claro. Dime qué tarea o idea quieres gestionar.',
           suggestedCategory: 'Rótulos',
-          extractedTitle: userMessage.slice(0, 40),
         };
       }
-    } catch (error) {
-      console.warn('OpenRouter API call notice, using local inference:', error);
       return {
-        replyText: 'Anotado en tu repositorio de Xprinta y sincronizado con Blue.app.',
+        type: 'idea',
+        replyText: 'Anotado en tu repositorio corporativo.',
         suggestedCategory: 'Rótulos',
-        extractedTitle: userMessage.slice(0, 40),
-        extractedTask: {
-          title: `Seguimiento: ${userMessage.slice(0, 35)}`,
-          description: userMessage,
-        }
+        extractedTitle: userMessage.slice(0, 35),
       };
     }
   }

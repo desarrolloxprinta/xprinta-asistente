@@ -1,6 +1,6 @@
 {
   "name": "temp_app",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "main": "index.ts",
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
@@ -10,6 +10,7 @@
     "expo-audio": "~57.0.3",
     "expo-font": "~57.0.1",
     "expo-haptics": "~57.0.1",
+    "expo-speech": "~57.0.1",
     "expo-speech-recognition": "^56.0.1",
     "expo-status-bar": "~57.0.1",
     "lucide-react-native": "^1.31.0",
