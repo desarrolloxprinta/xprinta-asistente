@@ -2,7 +2,8 @@
   "expo": {
     "name": "Xprinta Asistente",
     "slug": "xprinta-asistente",
-    "version": "1.0.6",
+    "scheme": "xprinta",
+    "version": "1.0.7",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -20,7 +21,14 @@
         "NSMicrophoneUsageDescription": "Xprinta Asistente necesita acceso al micrófono para interactuar por voz con el asistente.",
         "NSPhotoLibraryUsageDescription": "Xprinta Asistente necesita acceso a la galería para adjuntar referencias visuales, bocetos e imágenes de rótulos a tus notas e ideas.",
         "NSPhotoLibraryAddUsageDescription": "Xprinta Asistente necesita guardar imágenes de referencia técnica y notas en tu galería de fotos.",
-        "NSCameraUsageDescription": "Xprinta Asistente necesita acceso a la cámara para capturar fotografías de obras y proyectos de rotulación."
+        "NSCameraUsageDescription": "Xprinta Asistente necesita acceso a la cámara para capturar fotografías de obras y proyectos de rotulación.",
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "xprinta"
+            ]
+          }
+        ]
       },
       "appleTeamId": "855K4HU668"
     },

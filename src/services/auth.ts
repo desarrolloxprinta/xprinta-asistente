@@ -9,6 +9,7 @@ const STORAGE_KEY_SYNCED_USERS = '@xprinta_synced_team_members';
 export interface AuthorizedMember extends UserProfile {
   pinCode: string;
   username: string;
+  aliases?: string[];
 }
 
 // 1. Directorio oficial de los 12 miembros reales de Blue.app (PIN 1234 unificado para todos)
@@ -18,6 +19,7 @@ export const XPRINTA_AUTHORIZED_MEMBERS: AuthorizedMember[] = [
     name: 'Sergio Carbonell',
     username: 'sergiogarcia',
     email: 'sergiogarcia@xprinta.com',
+    aliases: ['sergiocarbonell@xprinta.com', 'sergio@xprinta.com', 'sergiogarcia', 'sergiocarbonell'],
     role: 'CEO / Dirección Ejecutiva',
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
     pinCode: '1234',
@@ -28,6 +30,7 @@ export const XPRINTA_AUTHORIZED_MEMBERS: AuthorizedMember[] = [
     name: 'Jorge Rodríguez',
     username: 'jorge',
     email: 'jorge@xprinta.com',
+    aliases: ['jorge@xprinta.com', 'jorge'],
     role: 'Marketing & Gestión de Proyectos',
     avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
     pinCode: '1234',
@@ -38,6 +41,7 @@ export const XPRINTA_AUTHORIZED_MEMBERS: AuthorizedMember[] = [
     name: 'Ruy De jesus',
     username: 'desarrollo',
     email: 'desarrollo@xprinta.com',
+    aliases: ['desarrollo@xprinta.com', 'ruy@xprinta.com', 'desarrollo', 'ruy'],
     role: 'Desarrollo Web & IA',
     avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150',
     pinCode: '1234',
@@ -48,6 +52,7 @@ export const XPRINTA_AUTHORIZED_MEMBERS: AuthorizedMember[] = [
     name: 'Carlos Jimenez',
     username: 'grafico',
     email: 'grafico@xprinta.com',
+    aliases: ['carlos@xprinta.com', 'grafico@xprinta.com', 'grafico', 'carlos'],
     role: 'Diseño Gráfico & Rotulación',
     avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150',
     pinCode: '1234',
@@ -58,6 +63,7 @@ export const XPRINTA_AUTHORIZED_MEMBERS: AuthorizedMember[] = [
     name: 'Jonathan Seldas',
     username: 'grafico3',
     email: 'jonathan@xprinta.com',
+    aliases: ['jonathan@xprinta.com', 'grafico3@xprinta.com', 'grafico3', 'jonathan'],
     role: 'Diseñador y Desarrollador 3D',
     avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
     pinCode: '1234',
@@ -68,6 +74,7 @@ export const XPRINTA_AUTHORIZED_MEMBERS: AuthorizedMember[] = [
     name: 'Mariana Diaz Sola',
     username: 'grafico2',
     email: 'mariana@xprinta.com',
+    aliases: ['mariana@xprinta.com', 'grafico2@xprinta.com', 'grafico2', 'mariana'],
     role: 'Xprinta Signs Spain / Diseño',
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
     pinCode: '1234',
@@ -78,6 +85,7 @@ export const XPRINTA_AUTHORIZED_MEMBERS: AuthorizedMember[] = [
     name: 'Emilio Sánchez coloma',
     username: 'operaciones',
     email: 'operaciones@xprinta.com',
+    aliases: ['emilio@xprinta.com', 'operaciones@xprinta.com', 'operaciones', 'emilio'],
     role: 'Responsable Operaciones Xprinta',
     avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
     pinCode: '1234',
@@ -88,6 +96,7 @@ export const XPRINTA_AUTHORIZED_MEMBERS: AuthorizedMember[] = [
     name: 'Enrique Jiménez',
     username: 'marketing20',
     email: 'marketing20@xprinta.com',
+    aliases: ['enrique@xprinta.com', 'marketing20@xprinta.com', 'marketing20', 'enrique'],
     role: 'Marketing & Comunicación',
     avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150',
     pinCode: '1234',
@@ -98,6 +107,7 @@ export const XPRINTA_AUTHORIZED_MEMBERS: AuthorizedMember[] = [
     name: 'Eva Perez',
     username: 'marketing30',
     email: 'marketing30@xprinta.com',
+    aliases: ['eva@xprinta.com', 'marketing30@xprinta.com', 'marketing30', 'eva'],
     role: 'Marketing Digital',
     avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150',
     pinCode: '1234',
@@ -108,6 +118,7 @@ export const XPRINTA_AUTHORIZED_MEMBERS: AuthorizedMember[] = [
     name: 'Francisco José Perona Galindo',
     username: 'gestion',
     email: 'gestion@xprinta.com',
+    aliases: ['francisco@xprinta.com', 'gestion@xprinta.com', 'gestion', 'francisco'],
     role: 'Gestión & Logística',
     avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150',
     pinCode: '1234',
@@ -118,6 +129,7 @@ export const XPRINTA_AUTHORIZED_MEMBERS: AuthorizedMember[] = [
     name: 'Lourdes Benavides',
     username: 'contabilidad2',
     email: 'contabilidad@xprinta.com',
+    aliases: ['lourdes@xprinta.com', 'contabilidad2@xprinta.com', 'contabilidad2', 'lourdes'],
     role: 'Contabilidad & Administración',
     avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150',
     pinCode: '1234',
@@ -128,6 +140,7 @@ export const XPRINTA_AUTHORIZED_MEMBERS: AuthorizedMember[] = [
     name: 'Martina G Morante',
     username: 'video',
     email: 'video@xprinta.com',
+    aliases: ['martina@xprinta.com', 'video@xprinta.com', 'video', 'martina'],
     role: 'Producción Audiovisual & Video',
     avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
     pinCode: '1234',
@@ -194,6 +207,7 @@ export class AuthService {
           name: ru.fullName || local?.name || 'Miembro Xprinta',
           username: ru.username || local?.username || 'usuario',
           email: local?.email || emailGuess,
+          aliases: local?.aliases || [],
           role: ru.jobTitle || local?.role || 'Miembro del Equipo',
           avatar: local?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
           pinCode: '1234',
@@ -228,7 +242,9 @@ export class AuthService {
       const matchesEmail = m.email.toLowerCase() === clean;
       const matchesUsername = m.username.toLowerCase() === clean;
       const matchesPrefix = m.email.split('@')[0].toLowerCase() === clean;
-      return (matchesEmail || matchesUsername || matchesPrefix) && (m.pinCode === cleanPin || cleanPin === '1234');
+      const matchesAlias = m.aliases && m.aliases.some(a => a.toLowerCase() === clean || a.toLowerCase() === clean.split('@')[0]);
+
+      return (matchesEmail || matchesUsername || matchesPrefix || matchesAlias) && (m.pinCode === cleanPin || cleanPin === '1234');
     });
 
     if (!member) {

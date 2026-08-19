@@ -2,74 +2,66 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { IdeaItem, UserProfile } from '../types';
 
 const STORAGE_KEYS = {
-  IDEAS: '@xprinta_ideas_v1',
   USER: '@xprinta_user_v1',
   CONFIG: '@xprinta_config_v1',
+  LEGACY_IDEAS: '@xprinta_ideas_v1',
+  IDEAS_PREFIX: '@xprinta_ideas_user_',
 };
 
 export const StorageService = {
-  async getIdeas(): Promise<IdeaItem[]> {
+  /**
+   * Obtiene las ideas y tareas guardadas específicamente por el usuario autenticado
+   */
+  async getIdeas(userId?: string): Promise<IdeaItem[]> {
+    const userKey = `${STORAGE_KEYS.IDEAS_PREFIX}${userId || 'global'}`;
     try {
-      const data = await AsyncStorage.getItem(STORAGE_KEYS.IDEAS);
-      if (!data) {
-        const initialIdeas: IdeaItem[] = [
-          {
-            id: '1',
-            title: 'Rótulo Corpóreo Retroiluminado LED',
-            content: 'Investigar perfilería de aluminio lacado en negro mate con iluminación cálida 3000K para franquicia Xprinta.',
-            category: 'Rótulos',
-            type: 'observation',
-            tags: ['LED', 'Corpóreo', 'Xprinta'],
-            createdAt: new Date().toISOString(),
-          },
-          {
-            id: '2',
-            title: 'Tendencia en Vinilos de Corte Ácido',
-            content: 'Inspiración de escaparate visto en tienda de diseño con degradado impreso sobre vinilo glaseado.',
-            category: 'Diseño',
-            type: 'link',
-            url: 'https://instagram.com/p/xprinta_sample',
-            tags: ['Vinilos', 'Escaparates'],
-            createdAt: new Date().toISOString(),
-          }
-        ];
-        await AsyncStorage.setItem(STORAGE_KEYS.IDEAS, JSON.stringify(initialIdeas));
-        return initialIdeas;
+      const data = await AsyncStorage.getItem(userKey);
+      if (data) {
+        return JSON.parse(data);
       }
-      return JSON.parse(data);
+
+      // Si es el perfil de Sergio (xp_usr_01) y su repositorio nuevo está vacío, migrar historial legacy
+      if (userId === 'xp_usr_01') {
+        const legacyData = await AsyncStorage.getItem(STORAGE_KEYS.LEGACY_IDEAS);
+        if (legacyData) {
+          const parsed = JSON.parse(legacyData);
+          await AsyncStorage.setItem(userKey, JSON.stringify(parsed));
+          return parsed;
+        }
+      }
+
+      return [];
     } catch (e) {
-      console.error('Error reading ideas', e);
+      console.error('Error reading user ideas', e);
       return [];
     }
   },
 
-  async saveIdea(idea: IdeaItem): Promise<IdeaItem[]> {
-    const list = await this.getIdeas();
+  /**
+   * Guarda una idea o tarea en el repositorio privado del usuario
+   */
+  async saveIdea(idea: IdeaItem, userId?: string): Promise<IdeaItem[]> {
+    const userKey = `${STORAGE_KEYS.IDEAS_PREFIX}${userId || 'global'}`;
+    const list = await this.getIdeas(userId);
     const updated = [idea, ...list.filter(i => i.id !== idea.id)];
-    await AsyncStorage.setItem(STORAGE_KEYS.IDEAS, JSON.stringify(updated));
+    await AsyncStorage.setItem(userKey, JSON.stringify(updated));
     return updated;
   },
 
-  async deleteIdea(id: string): Promise<IdeaItem[]> {
-    const list = await this.getIdeas();
+  /**
+   * Elimina una idea del repositorio privado del usuario
+   */
+  async deleteIdea(id: string, userId?: string): Promise<IdeaItem[]> {
+    const userKey = `${STORAGE_KEYS.IDEAS_PREFIX}${userId || 'global'}`;
+    const list = await this.getIdeas(userId);
     const updated = list.filter(i => i.id !== id);
-    await AsyncStorage.setItem(STORAGE_KEYS.IDEAS, JSON.stringify(updated));
+    await AsyncStorage.setItem(userKey, JSON.stringify(updated));
     return updated;
   },
 
   async getUser(): Promise<UserProfile | null> {
     const data = await AsyncStorage.getItem(STORAGE_KEYS.USER);
-    if (!data) {
-      const defaultUser: UserProfile = {
-        id: 'usr_xp_01',
-        name: 'Equipo Xprinta',
-        email: 'asistente@xprinta.com',
-        role: 'project_manager',
-        avatar: '',
-      };
-      await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(defaultUser));
-      return defaultUser;
-    }
+    if (!data) return null;
     return JSON.parse(data);
   },
 

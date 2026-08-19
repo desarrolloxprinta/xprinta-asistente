@@ -14,7 +14,8 @@ import {
   Dimensions,
   Easing,
   ActivityIndicator,
-  Alert
+  Alert,
+  Linking
 } from 'react-native';
 import {
   useFonts,
@@ -162,14 +163,44 @@ export default function App() {
   useEffect(() => {
     checkAuthentication();
     startParticleEngine();
+
+    // 1. Manejar enlace/texto compartido al abrir la app desde Share Sheet
+    const handleIncomingUrl = (event: { url: string }) => {
+      if (event?.url) {
+        processSharedContent(event.url);
+      }
+    };
+
+    Linking.getInitialURL().then(url => {
+      if (url) {
+        processSharedContent(url);
+      }
+    });
+
+    const sub = Linking.addEventListener('url', handleIncomingUrl);
+    return () => sub.remove();
   }, []);
+
+  const processSharedContent = async (rawUrl: string) => {
+    if (!rawUrl) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    
+    // Si viene como link compartido de Instagram u otra red
+    let cleanUrl = rawUrl;
+    if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) {
+      setNewUrl(cleanUrl);
+      setNewTitle('Referencia Externa Compartida');
+      setNewCategory('Diseño');
+      setAddModalVisible(true);
+    }
+  };
 
   const checkAuthentication = async () => {
     setAuthChecking(true);
     const user = await AuthService.getCurrentUser();
     if (user) {
       setCurrentUser(user);
-      await loadInitialData();
+      await loadInitialData(user);
     }
     setAuthChecking(false);
   };
@@ -188,7 +219,7 @@ export default function App() {
     if (result.success && result.user) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setCurrentUser(result.user);
-      await loadInitialData();
+      await loadInitialData(result.user);
     } else {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setLoginError(result.error || 'Credenciales no autorizadas.');
@@ -199,11 +230,14 @@ export default function App() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     await AuthService.logout();
     setCurrentUser(null);
+    setIdeas([]);
+    setActiveTaskDraft(null);
     setSettingsVisible(false);
   };
 
-  const loadInitialData = async () => {
-    const loadedIdeas = await StorageService.getIdeas();
+  const loadInitialData = async (userProfile?: UserProfile | null) => {
+    const activeUser = userProfile || currentUser;
+    const loadedIdeas = await StorageService.getIdeas(activeUser?.id);
     const loadedProjects = await BlueAppService.fetchProjects();
     const key = await OpenRouterService.getApiKey();
     const model = await OpenRouterService.getModel();
@@ -325,7 +359,7 @@ export default function App() {
           createdAt: new Date().toISOString(),
           syncedWithBlueApp: true,
         };
-        const updated = await StorageService.saveIdea(newIdea);
+        const updated = await StorageService.saveIdea(newIdea, currentUser?.id);
         setIdeas(updated);
         return;
       }
@@ -349,7 +383,7 @@ export default function App() {
         createdAt: new Date().toISOString(),
       };
 
-      const updated = await StorageService.saveIdea(newIdea);
+      const updated = await StorageService.saveIdea(newIdea, currentUser?.id);
       setIdeas(updated);
     } catch (err) {
       setIsProcessingAI(false);
@@ -422,7 +456,7 @@ export default function App() {
       createdAt: new Date().toISOString(),
     };
 
-    const updated = await StorageService.saveIdea(idea);
+    const updated = await StorageService.saveIdea(idea, currentUser?.id);
     setIdeas(updated);
     setAddModalVisible(false);
     setNewTitle('');
@@ -755,62 +789,74 @@ export default function App() {
               />
             </View>
 
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow}>
-              {CATEGORIES.map(c => (
-                <TouchableOpacity
-                  key={c}
-                  onPress={() => setSelectedCategory(c)}
-                  style={[styles.catChip, selectedCategory === c && styles.catChipActive]}
-                >
-                  <Text style={[styles.catChipText, selectedCategory === c && styles.catChipTextActive]}>
-                    {c}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-
-            <ScrollView contentContainerStyle={styles.sheetScroll}>
-              {filteredIdeas.map(item => (
-                <View key={item.id} style={styles.ideaCard}>
-                  <View style={styles.cardTop}>
-                    <View style={styles.categoryBadge}>
-                      <Text style={styles.categoryBadgeText}>{item.category}</Text>
-                    </View>
-                    <Text style={styles.cardDate}>
-                      {new Date(item.createdAt).toLocaleDateString('es-ES', { month: 'short', day: 'numeric' })}
+            <View style={{ height: 42, marginBottom: 14 }}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRowContent}>
+                {CATEGORIES.map(c => (
+                  <TouchableOpacity
+                    key={c}
+                    onPress={() => setSelectedCategory(c)}
+                    style={[styles.catChip, selectedCategory === c && styles.catChipActive]}
+                  >
+                    <Text style={[styles.catChipText, selectedCategory === c && styles.catChipTextActive]}>
+                      {c}
                     </Text>
-                  </View>
-                  <Text style={styles.cardTitle}>{item.title}</Text>
-                  <Text style={styles.cardContent}>{item.content}</Text>
-                  {item.url && (
-                    <TouchableOpacity style={styles.linkRow}>
-                      <ExternalLink size={12} color={colors.primary} />
-                      <Text style={styles.linkRowText} numberOfLines={1}>{item.url}</Text>
-                    </TouchableOpacity>
-                  )}
-                  <View style={styles.cardBottom}>
-                    <View style={{ flexDirection: 'row', gap: 6 }}>
-                      {item.tags.map(t => (
-                        <Text key={t} style={styles.tagLabel}>#{t}</Text>
-                      ))}
-                    </View>
-                    <TouchableOpacity
-                      onPress={() => {
-                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                        BlueAppService.createTask({
-                          title: item.title,
-                          description: item.content,
-                          projectId: projects[0]?.id || 'proj_01'
-                        });
-                      }}
-                      style={styles.blueBtn}
-                    >
-                      <FolderKanban size={12} color={colors.primary} />
-                      <Text style={styles.blueBtnText}>A Blue.app</Text>
-                    </TouchableOpacity>
-                  </View>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+
+            <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.sheetScroll}>
+              {filteredIdeas.length === 0 ? (
+                <View style={styles.emptyStateBox}>
+                  <Bookmark size={32} color={colors.n600} style={{ marginBottom: 10 }} />
+                  <Text style={styles.emptyStateTitle}>Sin notas en esta categoría</Text>
+                  <Text style={styles.emptyStateSubtitle}>
+                    Dicta una nueva idea o requerimiento por voz para empezar a registrar tu repositorio.
+                  </Text>
                 </View>
-              ))}
+              ) : (
+                filteredIdeas.map(item => (
+                  <View key={item.id} style={styles.ideaCard}>
+                    <View style={styles.cardTop}>
+                      <View style={styles.categoryBadge}>
+                        <Text style={styles.categoryBadgeText}>{item.category}</Text>
+                      </View>
+                      <Text style={styles.cardDate}>
+                        {new Date(item.createdAt).toLocaleDateString('es-ES', { month: 'short', day: 'numeric' })}
+                      </Text>
+                    </View>
+                    <Text style={styles.cardTitle}>{item.title}</Text>
+                    <Text style={styles.cardContent}>{item.content}</Text>
+                    {item.url && (
+                      <TouchableOpacity style={styles.linkRow}>
+                        <ExternalLink size={12} color={colors.primary} />
+                        <Text style={styles.linkRowText} numberOfLines={1}>{item.url}</Text>
+                      </TouchableOpacity>
+                    )}
+                    <View style={styles.cardBottom}>
+                      <View style={{ flexDirection: 'row', gap: 6 }}>
+                        {item.tags.map(t => (
+                          <Text key={t} style={styles.tagLabel}>#{t}</Text>
+                        ))}
+                      </View>
+                      <TouchableOpacity
+                        onPress={() => {
+                          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                          BlueAppService.createTask({
+                            title: item.title,
+                            description: item.content,
+                            projectId: projects[0]?.id || 'app-xprinta'
+                          });
+                        }}
+                        style={styles.blueBtn}
+                      >
+                        <FolderKanban size={12} color={colors.primary} />
+                        <Text style={styles.blueBtnText}>A Blue.app</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))
+              )}
             </ScrollView>
           </View>
         </View>
@@ -1408,21 +1454,41 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontSans.regular,
     fontSize: 13,
   },
-  chipRow: {
-    maxHeight: 44,
-    marginBottom: spacing.sm,
+  chipRowContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 2,
   },
   catChip: {
     paddingHorizontal: 14,
-    paddingVertical: 6,
-    height: 32,
-    borderRadius: 16,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: '#161616',
     marginRight: 8,
     borderWidth: 1,
-    borderColor: '#262626',
+    borderColor: '#2A2A2A',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  emptyStateBox: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 48,
+    paddingHorizontal: 24,
+  },
+  emptyStateTitle: {
+    color: colors.n400,
+    fontSize: 15,
+    fontFamily: typography.fontSans.semiBold,
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  emptyStateSubtitle: {
+    color: colors.n600,
+    fontSize: 12,
+    lineHeight: 18,
+    fontFamily: typography.fontSans.regular,
+    textAlign: 'center',
   },
   catChipActive: {
     backgroundColor: colors.primary,
