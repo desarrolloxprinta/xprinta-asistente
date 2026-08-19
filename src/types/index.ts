@@ -1,6 +1,6 @@
 export type IdeaCategory = 'Todos' | 'Rótulos' | 'Diseño' | 'Comercial' | 'Producción';
 
-export type IdeaType = 'voice_memo' | 'link' | 'quick_note' | 'observation';
+export type IdeaType = 'voice_memo' | 'task' | 'link' | 'quick_note' | 'observation';
 
 export interface IdeaItem {
   id: string;
@@ -20,6 +20,7 @@ export interface UserProfile {
   email: string;
   role: string;
   avatar?: string;
+  blueUserId?: string;
 }
 
 export interface BlueAppProject {

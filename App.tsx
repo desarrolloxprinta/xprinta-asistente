@@ -203,7 +203,7 @@ export default function App() {
 
   const loadInitialData = async () => {
     const loadedIdeas = await StorageService.getIdeas();
-    const loadedProjects = await BlueAppService.getProjects();
+    const loadedProjects = await BlueAppService.fetchProjects();
     const key = await OpenRouterService.getApiKey();
     const model = await OpenRouterService.getModel();
     
@@ -235,13 +235,69 @@ export default function App() {
 
   const [liveTranscript, setLiveTranscript] = useState<string>('');
 
+  const processUserVoiceQuery = async (speechText: string) => {
+    if (!speechText || speechText.trim().length === 0) {
+      setIsListening(false);
+      setIsProcessingAI(false);
+      setVoiceStatus('Toca para hablar');
+      return;
+    }
+
+    setIsListening(false);
+    setIsProcessingAI(true);
+    setVoiceStatus('Pensando...');
+
+    Animated.timing(frequencyPulse, {
+      toValue: 1,
+      duration: 400,
+      useNativeDriver: true,
+    }).start();
+
+    try {
+      const aiResponse = await OpenRouterService.chatWithAssistant(speechText);
+      
+      setIsProcessingAI(false);
+      setAssistantResponse(aiResponse.replyText);
+      setVoiceStatus(aiResponse.extractedTitle ? `✓ ${aiResponse.suggestedCategory}` : '');
+
+      const isTaskMode = !!aiResponse.extractedTask;
+      const newIdea: IdeaItem = {
+        id: Date.now().toString(),
+        title: aiResponse.extractedTitle || speechText.slice(0, 35),
+        content: speechText,
+        category: aiResponse.suggestedCategory,
+        type: isTaskMode ? 'task' : 'voice_memo',
+        tags: [isTaskMode ? 'Tarea Blue.app' : 'Idea', aiResponse.suggestedCategory, 'Voz'],
+        createdAt: new Date().toISOString(),
+      };
+
+      const updated = await StorageService.saveIdea(newIdea);
+      setIdeas(updated);
+
+      if (aiResponse.extractedTask) {
+        await BlueAppService.createTask({
+          title: aiResponse.extractedTask.title,
+          description: aiResponse.extractedTask.description,
+          projectId: projects[0]?.id || 'app-xprinta',
+          assigneeId: currentUser?.blueUserId,
+        });
+      }
+
+      // Friendly voice playback
+      await ElevenLabsService.speakText(aiResponse.replyText);
+    } catch (err) {
+      setIsProcessingAI(false);
+      setVoiceStatus('Toca para hablar');
+    }
+  };
+
   const triggerVoiceInteraction = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     
     if (!isListening) {
       setIsListening(true);
       setLiveTranscript('');
-      setVoiceStatus('Escuchando tu voz... Habla ahora');
+      setVoiceStatus('Te escucho...');
       setAssistantResponse('');
 
       Animated.loop(
@@ -259,69 +315,29 @@ export default function App() {
         ])
       ).start();
 
-      const started = await SpeechService.startListening((text) => {
-        if (text) {
-          setLiveTranscript(text);
-          setVoiceStatus(`"${text.slice(0, 35)}..."`);
+      const started = await SpeechService.startListening(
+        (text) => {
+          if (text) {
+            setLiveTranscript(text);
+            setVoiceStatus(`"${text.slice(0, 42)}..."`);
+          }
+        },
+        async (finalText) => {
+          // Automatic voice activity completion when user stops talking
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          await processUserVoiceQuery(finalText);
         }
-      });
+      );
 
       if (!started) {
         setVoiceStatus('Toca para hablar');
         setIsListening(false);
       }
     } else {
-      // User tapped again to FINISH speaking
+      // Manual finish if user taps before auto silence
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      setIsListening(false);
-      setIsProcessingAI(true);
-      setVoiceStatus('Procesando dictado con IA...');
-
-      Animated.timing(frequencyPulse, {
-        toValue: 1,
-        duration: 400,
-        useNativeDriver: true,
-      }).start();
-
-      const userText = (await SpeechService.stopListening()) || liveTranscript || 'Nueva idea para proyecto Xprinta';
-      
-      try {
-        const aiResponse = await OpenRouterService.chatWithAssistant(userText);
-        
-        setIsProcessingAI(false);
-        setAssistantResponse(aiResponse.replyText);
-        setVoiceStatus('Listo');
-
-        const newIdea: IdeaItem = {
-          id: Date.now().toString(),
-          title: aiResponse.extractedTitle,
-          content: userText,
-          category: aiResponse.suggestedCategory,
-          type: 'voice_memo',
-          tags: ['Voz', aiResponse.suggestedCategory, 'OpenRouter'],
-          createdAt: new Date().toISOString(),
-        };
-
-        const updated = await StorageService.saveIdea(newIdea);
-        setIdeas(updated);
-
-        // Mirror to NAS
-        // await NasSyncService.saveNoteToNas(newIdea);
-
-        if (aiResponse.extractedTask) {
-          await BlueAppService.createTask({
-            title: aiResponse.extractedTask.title,
-            description: aiResponse.extractedTask.description,
-            projectId: projects[0]?.id || 'proj_01'
-          });
-        }
-
-        // Voice playback
-        await ElevenLabsService.speakText(aiResponse.replyText);
-      } catch (err) {
-        setIsProcessingAI(false);
-        setVoiceStatus('Toca para hablar');
-      }
+      const text = (await SpeechService.stopListening()) || liveTranscript;
+      await processUserVoiceQuery(text);
     }
   };
 
@@ -457,34 +473,7 @@ export default function App() {
             </TouchableOpacity>
           </View>
 
-          {/* Acceso Rápido a Miembros Autorizados */}
-          <View style={styles.membersDirectory}>
-            <Text style={styles.directoryTitle}>Miembros Xprinta Registrados</Text>
-            {XPRINTA_AUTHORIZED_MEMBERS.map((m) => (
-              <TouchableOpacity
-                key={m.id}
-                style={styles.memberRow}
-                onPress={() => {
-                  setLoginEmail(m.email);
-                  setLoginPin(m.pinCode);
-                  handleLogin(m.email, m.pinCode);
-                }}
-              >
-                <View style={styles.memberAvatar}>
-                  <Text style={styles.memberAvatarText}>
-                    {m.name.split(' ').map(n => n[0]).join('')}
-                  </Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.memberName}>{m.name}</Text>
-                  <Text style={styles.memberRole}>{m.role}</Text>
-                </View>
-                <View style={styles.pinPill}>
-                  <Text style={styles.pinPillText}>PIN: {m.pinCode}</Text>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
+
         </ScrollView>
       </SafeAreaView>
     );
@@ -630,17 +619,16 @@ export default function App() {
 
         <View style={styles.statusBox}>
           {isProcessingAI ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 4 }}>
               <ActivityIndicator size="small" color={colors.primary} />
               <Text style={styles.statusText}>{voiceStatus}</Text>
             </View>
           ) : (
-            <Text style={styles.statusText}>{voiceStatus}</Text>
+            voiceStatus ? <Text style={styles.statusText}>{voiceStatus}</Text> : null
           )}
 
           {assistantResponse !== '' && (
             <View style={styles.responseBubble}>
-              <Volume2 size={16} color={colors.primary} style={{ marginRight: 8 }} />
               <Text style={styles.responseText}>{assistantResponse}</Text>
             </View>
           )}
@@ -1202,21 +1190,26 @@ const styles = StyleSheet.create({
   responseBubble: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#121212',
-    borderRadius: radius.md,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    marginTop: 12,
-    borderLeftWidth: 2,
-    borderLeftColor: colors.primary,
-    maxWidth: SCREEN_WIDTH * 0.86,
+    backgroundColor: 'rgba(24, 24, 24, 0.92)',
+    borderRadius: 16,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    marginTop: 16,
     borderWidth: 1,
-    borderColor: '#1E1E1E',
+    borderColor: 'rgba(241, 129, 8, 0.25)',
+    maxWidth: SCREEN_WIDTH * 0.90,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
   responseText: {
     color: colors.paper,
-    fontSize: 13,
+    fontSize: 14,
+    lineHeight: 20,
     fontFamily: typography.fontSans.regular,
+    textAlign: 'center',
     flex: 1,
   },
   bottomBar: {
@@ -1347,15 +1340,19 @@ const styles = StyleSheet.create({
   chipRow: {
     flexDirection: 'row',
     marginBottom: spacing.md,
+    paddingVertical: 4,
+    paddingHorizontal: 2,
   },
   catChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 5,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: radius.pill,
     backgroundColor: '#161616',
-    marginRight: 6,
+    marginRight: 8,
     borderWidth: 1,
-    borderColor: '#222222',
+    borderColor: '#262626',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   catChipActive: {
     backgroundColor: colors.primary,

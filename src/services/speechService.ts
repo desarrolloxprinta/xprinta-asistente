@@ -3,11 +3,14 @@ import { ExpoSpeechRecognitionModule } from 'expo-speech-recognition';
 let isListeningActive = false;
 let currentTranscript = '';
 let onTranscriptChange: ((text: string) => void) | null = null;
+let onSilenceAutoEnd: ((finalText: string) => void) | null = null;
+let silenceTimer: any = null;
 
 let resultSub: any = null;
 let errorSub: any = null;
 let endSub: any = null;
 let startSub: any = null;
+let speechEndSub: any = null;
 
 export class SpeechService {
   static async requestPermissions(): Promise<boolean> {
@@ -20,10 +23,22 @@ export class SpeechService {
     }
   }
 
-  static async startListening(onUpdate?: (text: string) => void): Promise<boolean> {
+  /**
+   * Starts active speech recognition with automatic silence timeout & dynamic voice streaming
+   */
+  static async startListening(
+    onUpdate?: (text: string) => void,
+    onAutoFinish?: (text: string) => void
+  ): Promise<boolean> {
     try {
       currentTranscript = '';
       onTranscriptChange = onUpdate || null;
+      onSilenceAutoEnd = onAutoFinish || null;
+
+      if (silenceTimer) {
+        clearTimeout(silenceTimer);
+        silenceTimer = null;
+      }
 
       const hasPerm = await this.requestPermissions();
       if (!hasPerm) {
@@ -40,26 +55,57 @@ export class SpeechService {
 
       resultSub = ExpoSpeechRecognitionModule.addListener('result', (event) => {
         if (event.results && event.results.length > 0) {
-          currentTranscript = event.results[0].transcript;
+          const text = event.results[0].transcript;
+          currentTranscript = text;
           if (onTranscriptChange) {
             onTranscriptChange(currentTranscript);
           }
+
+          // Reset silence timer on every new word recognized
+          if (silenceTimer) clearTimeout(silenceTimer);
+          
+          // If user stopped talking for 1.8 seconds, automatically finish and trigger AI
+          if (text.trim().length > 3) {
+            silenceTimer = setTimeout(async () => {
+              if (isListeningActive && onSilenceAutoEnd) {
+                const captured = currentTranscript;
+                await SpeechService.stopListening();
+                onSilenceAutoEnd(captured);
+              }
+            }, 1800);
+          }
+        }
+      });
+
+      speechEndSub = ExpoSpeechRecognitionModule.addListener('speechend', () => {
+        // Native end of utterance detected by iOS
+        if (currentTranscript.trim().length > 3 && !silenceTimer) {
+          silenceTimer = setTimeout(async () => {
+            if (isListeningActive && onSilenceAutoEnd) {
+              const captured = currentTranscript;
+              await SpeechService.stopListening();
+              onSilenceAutoEnd(captured);
+            }
+          }, 1200);
         }
       });
 
       errorSub = ExpoSpeechRecognitionModule.addListener('error', (error) => {
         console.warn('Speech recognition event error:', error.message);
         isListeningActive = false;
+        if (silenceTimer) clearTimeout(silenceTimer);
       });
 
       endSub = ExpoSpeechRecognitionModule.addListener('end', () => {
         isListeningActive = false;
+        if (silenceTimer) clearTimeout(silenceTimer);
       });
 
       await ExpoSpeechRecognitionModule.start({
         lang: 'es-ES',
         interimResults: true,
         continuous: true,
+        addsPunctuation: true,
       });
 
       isListeningActive = true;
@@ -72,6 +118,10 @@ export class SpeechService {
 
   static async stopListening(): Promise<string> {
     try {
+      if (silenceTimer) {
+        clearTimeout(silenceTimer);
+        silenceTimer = null;
+      }
       if (isListeningActive) {
         await ExpoSpeechRecognitionModule.stop();
         isListeningActive = false;
@@ -88,6 +138,7 @@ export class SpeechService {
     if (resultSub) { resultSub.remove(); resultSub = null; }
     if (errorSub) { errorSub.remove(); errorSub = null; }
     if (endSub) { endSub.remove(); endSub = null; }
+    if (speechEndSub) { speechEndSub.remove(); speechEndSub = null; }
   }
 
   static isListening(): boolean {
