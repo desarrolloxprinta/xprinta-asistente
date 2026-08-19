@@ -11,6 +11,15 @@ const DEFAULT_SECRET = 'pat_d7332db64cd84d1a9834deb093149623';
 const DEFAULT_ORG_ID = 'xprinta';
 const DEFAULT_PROJECT_SLUG = 'app-xprinta';
 
+export interface CreateTaskParams {
+  title: string;
+  description?: string;
+  projectId?: string;
+  assigneeIds?: string[];
+  tags?: Array<{ title: string; color?: string }>;
+  duedAt?: string; // ISO 8601 string
+}
+
 export class BlueAppService {
   static async getTokenId(): Promise<string> {
     const id = await AsyncStorage.getItem(STORAGE_KEY_BLUE_TOKEN_ID);
@@ -101,14 +110,9 @@ export class BlueAppService {
   }
 
   /**
-   * Create a new task / record in Blue.app in real-time
+   * Create a new rich task / record in Blue.app in real-time
    */
-  static async createTask(task: {
-    title: string;
-    description: string;
-    projectId?: string;
-    assigneeId?: string;
-  }): Promise<{ id: string; success: boolean; title: string }> {
+  static async createTask(task: CreateTaskParams): Promise<{ id: string; success: boolean; title: string; assignedUsers?: any[] }> {
     const tokenId = await this.getTokenId();
     const secret = await this.getSecret();
     const orgId = await this.getOrgId();
@@ -119,6 +123,15 @@ export class BlueAppService {
         createRecord(input: $input) {
           id
           title
+          duedAt
+          users {
+            id
+            fullName
+          }
+          tags {
+            id
+            title
+          }
           createdAt
         }
       }
@@ -126,11 +139,25 @@ export class BlueAppService {
 
     const inputPayload: any = {
       title: task.title,
-      description: task.description,
     };
 
-    if (task.assigneeId) {
-      inputPayload.assigneeIds = [task.assigneeId];
+    if (task.description && task.description.trim().length > 0) {
+      inputPayload.description = task.description;
+    }
+
+    if (task.assigneeIds && task.assigneeIds.length > 0) {
+      inputPayload.assigneeIds = task.assigneeIds;
+    }
+
+    if (task.tags && task.tags.length > 0) {
+      inputPayload.tags = task.tags.map(t => ({
+        title: t.title,
+        color: t.color || '#F18108'
+      }));
+    }
+
+    if (task.duedAt) {
+      inputPayload.duedAt = task.duedAt;
     }
 
     try {
@@ -157,6 +184,7 @@ export class BlueAppService {
         return {
           id: data.data.createRecord.id,
           title: data.data.createRecord.title,
+          assignedUsers: data.data.createRecord.users,
           success: true,
         };
       } else {

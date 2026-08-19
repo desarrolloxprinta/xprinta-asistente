@@ -254,12 +254,17 @@ export default function App() {
     }).start();
 
     try {
-      const aiResponse = await OpenRouterService.chatWithAssistant(speechText);
+      const members = await AuthService.getMembers();
+      const aiResponse = await OpenRouterService.chatWithAssistant(
+        speechText,
+        currentUser,
+        members
+      );
       
       setIsProcessingAI(false);
       setAssistantResponse(aiResponse.replyText);
 
-      // 1. Respuesta hablada inmediata y clara
+      // 1. Respuesta hablada inmediata y clara con ElevenLabs
       await ElevenLabsService.speakText(aiResponse.replyText);
 
       // 2. Si es conversación o saludo casual, NO guardamos como tarea ni idea
@@ -282,7 +287,7 @@ export default function App() {
         type: isTaskMode ? 'task' : (isLinkMode ? 'link' : 'voice_memo'),
         url: aiResponse.extractedUrl || (isLinkMode ? speechText : undefined),
         tags: [
-          isTaskMode ? 'Tarea Blue.app' : (isLinkMode ? 'Referencia Redes' : 'Idea'),
+          isTaskMode ? `Tarea (${aiResponse.extractedTask?.assignedToName || (currentUser ? currentUser.name : 'Asignado')})` : (isLinkMode ? 'Referencia Redes' : 'Idea'),
           aiResponse.suggestedCategory,
           'Voz'
         ],
@@ -292,13 +297,19 @@ export default function App() {
       const updated = await StorageService.saveIdea(newIdea);
       setIdeas(updated);
 
-      // 4. Si es tarea de trabajo, crearla en Blue.app
+      // 4. Si es tarea de trabajo, crearla en Blue.app con asignación y detalles completos
       if (isTaskMode && aiResponse.extractedTask) {
+        const targetUserId = aiResponse.extractedTask.assignedUserId || (currentUser ? currentUser.blueUserId : undefined);
+        
         await BlueAppService.createTask({
           title: aiResponse.extractedTask.title,
           description: aiResponse.extractedTask.description,
           projectId: projects[0]?.id || 'app-xprinta',
-          assigneeId: currentUser?.blueUserId,
+          assigneeIds: targetUserId ? [targetUserId] : undefined,
+          tags: (aiResponse.extractedTask.tags || [aiResponse.suggestedCategory]).map(t => ({
+            title: t,
+            color: '#F18108'
+          })),
         });
       }
     } catch (err) {
@@ -1273,8 +1284,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#0F0F0F',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    padding: spacing.xl,
-    maxHeight: SCREEN_HEIGHT * 0.82,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xl,
+    height: SCREEN_HEIGHT * 0.85,
     borderTopWidth: 1,
     borderColor: '#1F1F1F',
   },
@@ -1357,15 +1370,14 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   chipRow: {
-    flexDirection: 'row',
-    marginBottom: spacing.md,
-    paddingVertical: 4,
-    paddingHorizontal: 2,
+    maxHeight: 44,
+    marginBottom: spacing.sm,
   },
   catChip: {
     paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: radius.pill,
+    paddingVertical: 6,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: '#161616',
     marginRight: 8,
     borderWidth: 1,
