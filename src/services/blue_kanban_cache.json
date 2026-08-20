@@ -1,0 +1,586 @@
+[
+  {
+    "id": "ckih439pgg2l50834lmap77lh",
+    "name": "Signeo.es",
+    "slug": "signeo-web",
+    "columns": [
+      {
+        "id": "ckih6awt5gdsz08343ru99vb7",
+        "title": "INFORMACIÓN GENERAL"
+      },
+      {
+        "id": "ckih7bsz9gjfu0834bc5cup58",
+        "title": "THEME & PLUGINS"
+      },
+      {
+        "id": "ckih7lknxgkjb0834ugzwynij",
+        "title": "DISEÑO ESTRUCTURA WEB"
+      },
+      {
+        "id": "ckihbq0zvh1910834o8idg39g",
+        "title": "MANTENIMIENTO TÉCNICO"
+      },
+      {
+        "id": "ckivzujkz5u4108340v3r3m0q",
+        "title": "DOCUMENTACION Y OTROS"
+      }
+    ]
+  },
+  {
+    "id": "ckiykv9rffi200834jghnh48y",
+    "name": "Xprinta.com (proyectos)",
+    "slug": "xprinta-proyectos",
+    "columns": [
+      {
+        "id": "ckiyl943ifjai0834yl9mtg7g",
+        "title": "EN COLA"
+      },
+      {
+        "id": "ckiynjmmufssh0834h0gc9a4v",
+        "title": "ASIGNACION SEO"
+      },
+      {
+        "id": "ckiyl9iucfjel0834juh5bbni",
+        "title": "HACIENDO"
+      },
+      {
+        "id": "ckiyn85azfr0e0834hqb7zuha",
+        "title": "PUBLICADO WEB"
+      },
+      {
+        "id": "ckiyn8bisfr470834nimlniuk",
+        "title": "PROMOCIONADO RRSS"
+      }
+    ]
+  },
+  {
+    "id": "cknfslyvx5145876cqtn3ajwj94",
+    "name": "Flycar web",
+    "slug": "flycar",
+    "columns": [
+      {
+        "id": "cknfwggjb9jn30834cran6bye",
+        "title": "INFORMACIÓN GENERAL"
+      },
+      {
+        "id": "clvatb2ow30hzs8274qb5xa5z",
+        "title": "REDISEÑO"
+      },
+      {
+        "id": "cknfwn8x69m5908340eqpsax0",
+        "title": "GOOGLE MY BUSINESS"
+      },
+      {
+        "id": "clvarzvej2wv1s827okfcb1es",
+        "title": "OPTIMIZACIÓN PÁGINAS NAVEGACIÓN"
+      },
+      {
+        "id": "ckspx4gzfgek208348d73wzra",
+        "title": "OPTIMIZACIÓN  CONTENIDO"
+      },
+      {
+        "id": "clvauegim0390jjihwqeobo6f",
+        "title": "LINKBUILDING"
+      },
+      {
+        "id": "cknfwlgh29lgg0834t8sxsyy9",
+        "title": "RECURSOS"
+      },
+      {
+        "id": "cknfwkrd99l2l0834jg03s6yp",
+        "title": "APPS EXTERNAS"
+      },
+      {
+        "id": "cknfwkoe29l0b08347byfhvf7",
+        "title": "PLUGINS"
+      }
+    ]
+  },
+  {
+    "id": "cknyffp9z210547mqiowewccfj",
+    "name": "Distopica.com",
+    "slug": "nueva-web-distopica",
+    "columns": [
+      {
+        "id": "cknyfh091ej8r0834t10rcitp",
+        "title": "INFORMACIÓN GENERAL"
+      },
+      {
+        "id": "cknyfhjt8ejdt0834d27yjhjr",
+        "title": "ESTRUCTURA WEB"
+      },
+      {
+        "id": "cknygfl25eq3v0834yjja5vzx",
+        "title": "DISEÑO Y CONTENIDO WEB"
+      },
+      {
+        "id": "cknyfhcreejc00834fcdl89si",
+        "title": "PLUGINS "
+      },
+      {
+        "id": "cknyfm9mzekqk0834olyybfsj",
+        "title": "SERVICIOS EXTERNOS"
+      },
+      {
+        "id": "cknyfmo1seksg0834329quj57",
+        "title": "RECURSOS"
+      }
+    ]
+  },
+  {
+    "id": "ckocr3msb89939087qjektfq1r4",
+    "name": "BRICOTOLDO",
+    "slug": "bricotoldo",
+    "columns": [
+      {
+        "id": "ckocr3msc89939987qj1nbij3dd",
+        "title": "INFORMACIÓN GENERAL"
+      },
+      {
+        "id": "ckocr3mse89941487qj9n8kxws5",
+        "title": "PRECIOS Y FORMAS DE PAGO"
+      },
+      {
+        "id": "ckocr3msg89942787qjoiyalj3w",
+        "title": "PÁGINAS"
+      },
+      {
+        "id": "ckocr3mso89951487qjermael7j",
+        "title": "PRODUCTOS"
+      },
+      {
+        "id": "ckocr3msl89947887qj5wgnun6z",
+        "title": "GOOGLE / FACEBOOK"
+      },
+      {
+        "id": "ckocr3msn89950387qjmgdp1n6g",
+        "title": "PLUGINS Y APPS EXTERNAS"
+      },
+      {
+        "id": "ckocr3msr89954287qjgafwhpwy",
+        "title": "COMUNICACIÓN"
+      },
+      {
+        "id": "ckocr3mss89955187qjb6y9tjnm",
+        "title": "RECURSOS"
+      },
+      {
+        "id": "ckocr3mst89956287qj55vguov6",
+        "title": "REVISIONES Y PROGRESO"
+      }
+    ]
+  },
+  {
+    "id": "ckq1ziivv79620170pabjing2qy",
+    "name": "Plantilla de proyectos web",
+    "slug": "intranet-puntos-xprinta",
+    "columns": [
+      {
+        "id": "ckq1ziivv79621070paxask85fc",
+        "title": "INFORMACIÓN GENERAL"
+      },
+      {
+        "id": "ckq1ziivx79622570pav2bfxcta",
+        "title": "PRECIOS Y FORMAS DE PAGO"
+      },
+      {
+        "id": "ckq1ziivz79623870pad9kbcpc5",
+        "title": "PÁGINAS"
+      },
+      {
+        "id": "ckq1ziiwa79632570pah14sv8s9",
+        "title": "PRODUCTOS"
+      },
+      {
+        "id": "ckq1ziiw679628970pashpkq39q",
+        "title": "GOOGLE / FACEBOOK"
+      },
+      {
+        "id": "ckq1ziiw979631470paa3mgylw9",
+        "title": "PLUGINS Y APPS EXTERNAS"
+      },
+      {
+        "id": "ckq1ziiwd79635370paxz1846be",
+        "title": "COMUNICACIÓN"
+      },
+      {
+        "id": "ckq1ziiwe79636270pa0vujqnir",
+        "title": "RECURSOS"
+      },
+      {
+        "id": "ckq1ziiwf79637370payucgcgfc",
+        "title": "REVISIONES Y PROGRESO"
+      }
+    ]
+  },
+  {
+    "id": "ckq20014g80968470paw0qbr7i6",
+    "name": "Intranet Puntos Xprinta",
+    "slug": "puntos-xprinta-intranet",
+    "columns": [
+      {
+        "id": "ckq20014h80969370pae5bv4obm",
+        "title": "INFORMACIÓN GENERAL"
+      },
+      {
+        "id": "ckq20014i80970870paiaa7iln2",
+        "title": "LISTADO DE PROVEEDORES"
+      },
+      {
+        "id": "ckq20014j80970970paizb7dfrn",
+        "title": "GALERIA DE RECURSOS DIGITALES"
+      },
+      {
+        "id": "ckq20014j80971270paqwqrnzid",
+        "title": "INFORME DE SOLVENCIA"
+      },
+      {
+        "id": "ckq20014j80971070pa0204ay7d",
+        "title": "XPRINTA ACADEMY"
+      },
+      {
+        "id": "ckq20014j80971170pau9dg8678",
+        "title": "GENERADOR DE CLIENTES DE RED"
+      },
+      {
+        "id": "ckq20014j80971370pawo0yo1wn",
+        "title": "DOCUMENTACIÓN DE CLIENTES"
+      },
+      {
+        "id": "ckq20014j80971470pagb8y8k82",
+        "title": "RECURSOS"
+      },
+      {
+        "id": "ckq20014j80971570pay3xuo2ta",
+        "title": "REVISIONES Y PROGRESO"
+      }
+    ]
+  },
+  {
+    "id": "cks7bcnpu9793207vnrtz2roa3p",
+    "name": "Sistema Informático",
+    "slug": "informatica-0",
+    "columns": [
+      {
+        "id": "cks7be9924sx30834huiyozn5",
+        "title": "CORREO"
+      },
+      {
+        "id": "cksm21yrdo65f0834z56sf1ze",
+        "title": "SISTEMA INFORMATICO"
+      }
+    ]
+  },
+  {
+    "id": "cksn22v745974798pqramk37pbp",
+    "name": "Signolia.com",
+    "slug": "signolia",
+    "columns": [
+      {
+        "id": "cm9quw2ru0imao41y676ta9hf",
+        "title": "PODCAST"
+      },
+      {
+        "id": "cm9quwqng0ipmo41yoh34l4kx",
+        "title": "SHORTS"
+      },
+      {
+        "id": "cm9quwwpe0irxo41yyv6hqat0",
+        "title": "NEWSLETTER"
+      },
+      {
+        "id": "cm9quwznv0isqo41yfquncb2o",
+        "title": "BLOG"
+      },
+      {
+        "id": "cm9qux2i30itgo41ydjhcuny6",
+        "title": "SPOTS"
+      },
+      {
+        "id": "cm9quxdzy0ixjo41yjloah9ld",
+        "title": "CONTENIDO EXCLUISVO"
+      },
+      {
+        "id": "cm9qvw60w0nd9o41y2t11tr94",
+        "title": "REUNIONES DE CONTROL"
+      },
+      {
+        "id": "cm9quxldp0iz7o41yi8iuj72p",
+        "title": "OTROS"
+      }
+    ]
+  },
+  {
+    "id": "cksn2ogj56021948pqryxn5873a",
+    "name": "E-rotulos.com",
+    "slug": "e-rotuloscom",
+    "columns": [
+      {
+        "id": "cksprbmqjeimt0834gza8ilf4",
+        "title": "INFORMACIÓN GENERAL"
+      },
+      {
+        "id": "cksn3d1uau8ic0834dp9tg1hn",
+        "title": "SOLUCION ERRORES INICIAL"
+      },
+      {
+        "id": "cksprbr8weisq0834tkv8alc3",
+        "title": "PLUGINS"
+      },
+      {
+        "id": "cksprbtvyeiv408341sjckfj5",
+        "title": "APPS EXTERNAS"
+      },
+      {
+        "id": "cksprc2tmej6q0834p83yj54e",
+        "title": "RECURSOS"
+      }
+    ]
+  },
+  {
+    "id": "ckt19vyuh14871466ur0l5ic5zvk",
+    "name": "Ayto. Candelario (app)",
+    "slug": "candelario-aap",
+    "columns": [
+      {
+        "id": "ckt19vyui14871556ur0ayy8gq47",
+        "title": "INFORMACIÓN GENERAL"
+      },
+      {
+        "id": "ckt1bakxc8hj90834lpbxbp89",
+        "title": "Información de publicación"
+      }
+    ]
+  },
+  {
+    "id": "ckty4fmzr228378dkqwm8ay3bzt",
+    "name": "Xprinta App",
+    "slug": "xprinta-app",
+    "columns": [
+      {
+        "id": "ckty4g3ksd6i4073452vsgzyv",
+        "title": "Referencia para app"
+      }
+    ]
+  },
+  {
+    "id": "cku6sw06313046387xqpxrypcc14",
+    "name": "Markemia Podcast",
+    "slug": "metamarketing",
+    "columns": [
+      {
+        "id": "cku6swqiz03iw0734u57w75tf",
+        "title": "INVITADOS"
+      },
+      {
+        "id": "ckue0ufc0brqh0734d3s5dwzl",
+        "title": "FICHA CREADA"
+      },
+      {
+        "id": "cku867l7h9nyp0734yj74l1m1",
+        "title": "CONTACTADO"
+      },
+      {
+        "id": "cku867rb69o5m073408jqa8zb",
+        "title": "ENTREVISTADO"
+      },
+      {
+        "id": "cku867yc99oa607341dv5qdt2",
+        "title": "SUBIDO A WEB Y REDES"
+      }
+    ]
+  },
+  {
+    "id": "ckxq3g5k6137634503papa0kmfxj",
+    "name": "App Xprinta",
+    "slug": "app-xprinta",
+    "columns": [
+      {
+        "id": "ckxq3h0cxhvze0834bhirftqk",
+        "title": "ELEMENTOS APP"
+      }
+    ]
+  },
+  {
+    "id": "cl2q01wry3117779iqvpelm2u9e",
+    "name": "TotalSign",
+    "slug": "totalsign",
+    "columns": [
+      {
+        "id": "cl2q1tn69vhhl08343cnmw5ky",
+        "title": "Estados"
+      },
+      {
+        "id": "cl2q26e44vnoo0834sj2zqty4",
+        "title": "Recursos"
+      },
+      {
+        "id": "cl2q251t4vna10834d921axso",
+        "title": "Estructura Web"
+      },
+      {
+        "id": "cl2q25a3wvncp0834knavznjk",
+        "title": "Diseño"
+      },
+      {
+        "id": "cl2q25kocvnh90834c8fjyik3",
+        "title": "Contenido"
+      },
+      {
+        "id": "cl2q267qvvnnb0834trc8h7mu",
+        "title": "Hosting y Servicios Externos"
+      }
+    ]
+  },
+  {
+    "id": "cl59hug0u150729bcquoqmv9umz",
+    "name": "Inventario hardware",
+    "slug": "ordenadores",
+    "columns": [
+      {
+        "id": "cl59huuqg4sps078639rjflro",
+        "title": "FICHA ORDENADOR"
+      }
+    ]
+  },
+  {
+    "id": "cl78tyx6p759068bdp4ejn2njwx",
+    "name": "Plantilla Mantenimiento técnico ",
+    "slug": "fiware-technical-maintenance",
+    "columns": [
+      {
+        "id": "cl78ucbpg61g90786bur4ujwv",
+        "title": "STATUS"
+      },
+      {
+        "id": "cl78ub7y361eb0786p36j3d5u",
+        "title": "REQUESTED"
+      },
+      {
+        "id": "cl78ubbkx61ep0786b7ydjp1t",
+        "title": "WORKING"
+      },
+      {
+        "id": "cl78ubktm61f30786iim27gux",
+        "title": "WAITING"
+      },
+      {
+        "id": "cl78ubsne61fi07863mujax9e",
+        "title": "REVIEW"
+      },
+      {
+        "id": "cl78ubu6f61fp0786omn2nemf",
+        "title": "DONE"
+      },
+      {
+        "id": "cl78umojv61pg07864ms18m1q",
+        "title": "UPDATES"
+      }
+    ]
+  },
+  {
+    "id": "cl78v7n6a1024935bdp4lcsbdngn",
+    "name": "Fiware.org",
+    "slug": "fiwareorg",
+    "columns": [
+      {
+        "id": "cl78v7n6f1024968bdp4z7f2yd0a",
+        "title": "STATUS"
+      },
+      {
+        "id": "cl78v7n6b1024947bdp44ilo857a",
+        "title": "REQUESTED"
+      },
+      {
+        "id": "cl78v7n6d1024954bdp4id7th7lc",
+        "title": "WORKING"
+      },
+      {
+        "id": "cl78v7n6d1024956bdp41sqjte4p",
+        "title": "WAITING"
+      },
+      {
+        "id": "cl78v7n6d1024958bdp4n2lztely",
+        "title": "REVIEW"
+      },
+      {
+        "id": "cl78v7n6e1024960bdp4blhutevi",
+        "title": "DONE"
+      },
+      {
+        "id": "cl78v7n6g1024982bdp4pqvqydx6",
+        "title": "UPDATES"
+      }
+    ]
+  },
+  {
+    "id": "cl78vfhsx1214286c6qpshjz8we8",
+    "name": "ThebatteryPass.eu",
+    "slug": "thebatterypasseu",
+    "columns": [
+      {
+        "id": "cl78vfht11214312c6qpca6ofbta",
+        "title": "STATUS"
+      },
+      {
+        "id": "cl78vfhsz1214297c6qpanqujkbe",
+        "title": "REQUESTED"
+      },
+      {
+        "id": "cl78vfht01214304c6qpanlc4ank",
+        "title": "WORKING"
+      },
+      {
+        "id": "cl78vfht01214306c6qp62yr8nyt",
+        "title": "WAITING"
+      },
+      {
+        "id": "cl78vfht01214308c6qp0w54pk15",
+        "title": "REVIEW"
+      },
+      {
+        "id": "cl78vfht01214310c6qpcmix750m",
+        "title": "DONE"
+      },
+      {
+        "id": "cl78vfht21214326c6qpindsutma",
+        "title": "UPDATES"
+      }
+    ]
+  },
+  {
+    "id": "cl78vg60g1086293bdp4y94ozby4",
+    "name": "Token-project.eu",
+    "slug": "token-projecteu",
+    "columns": [
+      {
+        "id": "cl78vg60j1086320bdp49pedeum0",
+        "title": "STATUS"
+      },
+      {
+        "id": "cl78vg60i1086305bdp49mqw4wid",
+        "title": "REQUESTED"
+      },
+      {
+        "id": "cl78vg60j1086312bdp4bk8l73ip",
+        "title": "WORKING"
+      },
+      {
+        "id": "cl78vg60j1086314bdp4e7rk3sia",
+        "title": "WAITING"
+      },
+      {
+        "id": "cl78vg60j1086316bdp4r2nkt5dk",
+        "title": "REVIEW"
+      },
+      {
+        "id": "cl78vg60j1086318bdp41k9tj5q2",
+        "title": "DONE"
+      },
+      {
+        "id": "cl78vg60l1086334bdp4ydvvpdt9",
+        "title": "UPDATES"
+      }
+    ]
+  }
+]

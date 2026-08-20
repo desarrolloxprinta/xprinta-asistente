@@ -23,11 +23,18 @@ export interface UserProfile {
   blueUserId?: string;
 }
 
+export interface BlueAppColumn {
+  id: string;
+  title: string;
+}
+
 export interface BlueAppProject {
   id: string;
   name: string;
   companyName: string;
   color?: string;
+  slug?: string;
+  columns?: BlueAppColumn[];
 }
 
 export interface BlueAppTask {

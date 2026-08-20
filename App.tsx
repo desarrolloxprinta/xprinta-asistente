@@ -53,14 +53,16 @@ import {
   Sun,
   Moon,
   Smartphone,
-  Trash2
+  Trash2,
+  BookOpen
 } from 'lucide-react-native';
 
 import { colors, lightTheme, darkTheme, typography, spacing, radius, ThemeColors } from './src/theme/tokens';
 import { ThemeService, ThemePreference } from './src/services/themeService';
 import { IdeaItem, IdeaCategory, UserProfile } from './src/types';
 import { StorageService } from './src/services/storage';
-import { ElevenLabsService } from './src/services/elevenlabs';
+import { ElevenLabsService, ELEVENLABS_VOICES } from './src/services/elevenlabs';
+import { DictionaryService, DictionaryCategory } from './src/services/dictionaryService';
 import { BlueAppService } from './src/services/blueapp';
 import { OpenRouterService, TaskDraft } from './src/services/openrouter';
 import { NasSyncService } from './src/services/nasSync';
@@ -69,8 +71,8 @@ import { SpeechService } from './src/services/speechService';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-const TOTAL_PARTICLES = 480; // Densidad viva cuántica de partículas
-const RINGS = [4, 10, 18, 28, 42, 58, 76, 98, 122, 145];
+const TOTAL_PARTICLES = 650; // Densidad extrema compacta sin dispersión
+const RINGS = [3, 8, 14, 22, 32, 45, 60, 78, 96, 115];
 
 const OPENROUTER_MODELS = [
   { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini (Rápido)' },
@@ -119,6 +121,10 @@ export default function App() {
   const [openRouterKey, setOpenRouterKey] = useState('');
   const [currentModel, setCurrentModel] = useState('openai/gpt-4o-mini');
   const [elevenLabsKey, setElevenLabsKey] = useState('');
+  const [selectedVoiceId, setSelectedVoiceId] = useState('t8NIKqytDP52LZhxHPhn');
+  const [technicalDictionary, setTechnicalDictionary] = useState<DictionaryCategory[]>([]);
+  const [newDictTerm, setNewDictTerm] = useState('');
+  const [selectedDictCatId, setSelectedDictCatId] = useState('materials');
 
     // NAS WD My Cloud EX4100 state
   const [nasHost, setNasHost] = useState('http://10.254.80.28');
@@ -159,26 +165,30 @@ export default function App() {
 
   const particleField = useRef(
     Array.from({ length: TOTAL_PARTICLES }, (_, i) => {
-      // Si i < 80, son partículas concentradas dentro del propio núcleo activo (3px a 20px)
+      // Distribución hiper-compacta: 650 micropartículas ultra-juntas
+      // 150 en el núcleo puro (2px a 18px), 300 en órbita media (18px a 65px), y 200 en corona externa contenida (65px a 115px)
       let baseRadius: number;
-      if (i < 80) {
-        baseRadius = 3 + Math.random() * 18;
+      if (i < 150) {
+        baseRadius = 2 + Math.random() * 16;
+      } else if (i < 450) {
+        const u = Math.pow(Math.random(), 1.2);
+        baseRadius = 18 + u * 47;
       } else {
-        const u = Math.pow(Math.random(), 1.4);
-        baseRadius = 18 + u * 125;
+        const u = Math.pow(Math.random(), 1.5);
+        baseRadius = 65 + u * 50;
       }
       
       const angle = Math.random() * 2 * Math.PI;
-      const size = baseRadius < 25 ? 1.0 : (baseRadius < 60 ? 1.2 : 1.5);
-      const isCore = baseRadius < 25;
-      const opacity = isCore ? (0.8 + Math.random() * 0.2) : (0.25 + Math.random() * 0.5);
+      const size = baseRadius < 22 ? 0.9 : (baseRadius < 55 ? 1.1 : 1.3);
+      const isCore = baseRadius < 22;
+      const opacity = isCore ? (0.85 + Math.random() * 0.15) : (0.40 + Math.random() * 0.45);
       
       let pColor = colors.primary;
-      if (baseRadius < 15) {
+      if (baseRadius < 14) {
         pColor = '#FFFFFF';
-      } else if (baseRadius < 35) {
+      } else if (baseRadius < 30) {
         pColor = '#FFA845';
-      } else if (baseRadius < 85) {
+      } else if (baseRadius < 70) {
         pColor = '#F18108';
       } else {
         pColor = '#D06B02';
@@ -280,11 +290,17 @@ export default function App() {
     const loadedProjects = await BlueAppService.fetchProjects();
     const key = await OpenRouterService.getApiKey();
     const model = await OpenRouterService.getModel();
+    const elKey = await ElevenLabsService.getApiKey();
+    const savedVoice = await ElevenLabsService.getVoiceId();
+    const loadedDict = await DictionaryService.getDictionary();
     
     setIdeas(loadedIdeas);
     setProjects(loadedProjects);
     setOpenRouterKey(key);
     setCurrentModel(model);
+    setElevenLabsKey(elKey);
+    setSelectedVoiceId(savedVoice);
+    setTechnicalDictionary(loadedDict);
   };
 
   const startParticleEngine = () => {
@@ -377,16 +393,15 @@ export default function App() {
 
     try {
       const members = await AuthService.getMembers();
-      const workspaces = projects.map(p => ({ id: p.id, name: p.name }));
-      
       const distinctCats = userCategories.filter(c => c !== 'Todos');
       const aiResponse = await OpenRouterService.chatWithAssistant(
         speechText,
         currentUser,
         members,
-        workspaces,
+        projects,
         distinctCats,
-        activeTaskDraft
+        activeTaskDraft,
+        ideas
       );
       
       setIsProcessingAI(false);
@@ -395,9 +410,26 @@ export default function App() {
       // 1. Respuesta hablada inmediata y clara con ElevenLabs
       await ElevenLabsService.speakText(aiResponse.replyText);
 
-      // 2. Si es conversación o saludo casual, NO guardamos como tarea ni idea
+      // 2. Si es conversación casual
       if (aiResponse.type === 'conversation') {
         setVoiceStatus('Conversación activa');
+        return;
+      }
+
+      // 2.1 Si es una CONSULTA o BÚSQUEDA de historial/ideas/tareas/enlaces
+      if (aiResponse.type === 'query') {
+        setVoiceStatus('Respuesta a tu consulta');
+        if (aiResponse.queryFilter) {
+          if (aiResponse.queryFilter.section && aiResponse.queryFilter.section !== 'all') {
+            setActiveSectionTab(aiResponse.queryFilter.section);
+          }
+          if (aiResponse.queryFilter.targetCategory) {
+            setSelectedCategory(aiResponse.queryFilter.targetCategory);
+          }
+          if (aiResponse.queryFilter.searchTerm) {
+            setSearchQuery(aiResponse.queryFilter.searchTerm);
+          }
+        }
         return;
       }
 
@@ -408,10 +440,14 @@ export default function App() {
           ...aiResponse.extractedTask,
         };
 
-        // Si faltan datos clave, mantenemos el borrador activo y le pedimos al usuario que responda
-        if (aiResponse.isTaskComplete === false) {
+        // Si hay sospecha de duplicado semántico o faltan datos, mantenemos el borrador activo y esperamos aclaración del usuario
+        if (aiResponse.isTaskComplete === false || aiResponse.isPotentialDuplicate === true) {
           setActiveTaskDraft(mergedDraft);
-          setVoiceStatus(`⏳ Completando ficha de tarea...`);
+          if (aiResponse.isPotentialDuplicate) {
+            setVoiceStatus(`⚠️ Posible duplicado detectado - esperando aclaración`);
+          } else {
+            setVoiceStatus(`⏳ Completando ficha de tarea...`);
+          }
           return;
         }
 
@@ -429,6 +465,7 @@ export default function App() {
           title: mergedDraft.title || speechText.slice(0, 45),
           description: mergedDraft.description || speechText,
           projectId: targetWorkspace,
+          columnId: mergedDraft.columnId,
           assigneeIds: targetUserId ? [targetUserId] : undefined,
           tags: rawTags.map(t => ({
             title: t || 'General',
@@ -442,8 +479,9 @@ export default function App() {
           title: mergedDraft.title || speechText.slice(0, 45),
           content: `${mergedDraft.description || speechText}
 
-• Asignado a: ${mergedDraft.assignedToName || 'Equipo'}
-• Proyecto: ${mergedDraft.workspaceName || 'Xprinta'}
+• Responsable: ${mergedDraft.assignedToName || 'Equipo'}
+• Workspace: ${mergedDraft.workspaceName || 'Xprinta'}
+• Columna Kanban: ${mergedDraft.columnName || 'General'}
 • Plazo: ${mergedDraft.dueDateText || 'Sin fecha'}`,
           category: categoryToUse,
           type: 'task',
@@ -584,9 +622,29 @@ export default function App() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
+  const handleAddDictionaryTerm = async () => {
+    if (!newDictTerm.trim()) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    const updated = await DictionaryService.addCustomTerm(selectedDictCatId, newDictTerm.trim());
+    setTechnicalDictionary([...updated]);
+    setNewDictTerm('');
+  };
+
+  const handleRemoveDictionaryTerm = async (catId: string, term: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const updated = await DictionaryService.removeTerm(catId, term);
+    setTechnicalDictionary([...updated]);
+  };
+
   const handleSaveSettings = async () => {
     await OpenRouterService.setApiKey(openRouterKey);
     await OpenRouterService.setModel(currentModel);
+    if (elevenLabsKey.trim()) {
+      await ElevenLabsService.setApiKey(elevenLabsKey.trim());
+    }
+    if (selectedVoiceId) {
+      await ElevenLabsService.setVoiceId(selectedVoiceId);
+    }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setSettingsVisible(false);
   };
@@ -1331,6 +1389,49 @@ export default function App() {
               ))}
             </ScrollView>
 
+            {/* SECCIÓN VOZ HYPER-HUMANA ELEVENLABS */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4, marginTop: 4 }}>
+              <Volume2 size={15} color={colors.primary} />
+              <Text style={styles.fieldLabel}>Selección de Voz Oficial de la IA</Text>
+            </View>
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+              {ELEVENLABS_VOICES.map(v => (
+                <TouchableOpacity
+                  key={v.id}
+                  onPress={async () => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setSelectedVoiceId(v.id);
+                    await ElevenLabsService.setVoiceId(v.id);
+                  }}
+                  style={[
+                    styles.themeOptionBtn,
+                    { flex: 1, paddingVertical: 12 },
+                    selectedVoiceId === v.id && styles.themeOptionBtnActive,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.themeOptionText,
+                      { fontWeight: '700', fontSize: 13.5 },
+                      selectedVoiceId === v.id && styles.themeOptionTextActive,
+                    ]}
+                  >
+                    {v.gender === 'male' ? '🧔 ' : '👩 '}{v.name} ({v.gender === 'male' ? 'Masculina' : 'Femenina'})
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={[styles.fieldLabel, { fontSize: 12.5 }]}>API Key de ElevenLabs</Text>
+            <TextInput
+              placeholder="sk_..."
+              placeholderTextColor={colors.n500}
+              style={styles.fieldInput}
+              value={elevenLabsKey}
+              onChangeText={setElevenLabsKey}
+              secureTextEntry
+            />
+
             {/* SECCIÓN APARIENCIA / TEMA (LIGHT DEFAULT | DARK | AUTO) */}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8, marginTop: 4 }}>
               <Sun size={15} color={colors.primary} />
@@ -1380,6 +1481,59 @@ export default function App() {
               </TouchableOpacity>
             </View>
 
+
+            {/* SECCIÓN DICCIONARIO TÉCNICO Y GLOSARIO XPRINTA */}
+            <View style={[styles.nasHeaderBox, { marginTop: 18, borderColor: 'rgba(241, 129, 8, 0.3)' }]}>
+              <BookOpen size={16} color={colors.primary} />
+              <Text style={styles.nasHeaderTitle}>Diccionario Técnico & Fonético Xprinta</Text>
+            </View>
+            <Text style={[styles.loginSubtitle, { marginHorizontal: 0, marginBottom: 10, fontSize: 13 }]}>
+              Vocabulario especializado inyectado en el reconocimiento de voz y en el cerebro de la IA para interpretar materiales, máquinas y personas.
+            </Text>
+
+            {/* Categorías del Diccionario */}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 10 }}>
+              {technicalDictionary.map(cat => (
+                <TouchableOpacity
+                  key={cat.id}
+                  onPress={() => setSelectedDictCatId(cat.id)}
+                  style={[styles.catChip, selectedDictCatId === cat.id && styles.catChipActive]}
+                >
+                  <Text style={[styles.catChipText, selectedDictCatId === cat.id && styles.catChipTextActive]}>
+                    {cat.name} ({cat.terms.length})
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            {/* Lista de Términos de la Categoría Seleccionada */}
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12, maxHeight: 130 }}>
+              {(technicalDictionary.find(c => c.id === selectedDictCatId)?.terms || []).slice(0, 16).map(term => (
+                <View key={term} style={[styles.pillButton, { paddingVertical: 5, paddingHorizontal: 10, borderRadius: 12, backgroundColor: activeTheme.isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)' }]}>
+                  <Text style={{ fontSize: 12.5, color: activeTheme.textPrimary, fontWeight: '500' }}>{term}</Text>
+                  <TouchableOpacity onPress={() => handleRemoveDictionaryTerm(selectedDictCatId, term)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <X size={12} color="#EF4444" style={{ marginLeft: 5 }} />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+
+            {/* Input para Agregar Nuevo Término */}
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
+              <TextInput
+                placeholder="Añadir material, máquina o persona..."
+                placeholderTextColor={colors.n500}
+                style={[styles.fieldInput, { flex: 1, marginBottom: 0 }]}
+                value={newDictTerm}
+                onChangeText={setNewDictTerm}
+              />
+              <TouchableOpacity
+                style={[styles.btnSecondary, { paddingHorizontal: 16, justifyContent: 'center', alignItems: 'center' }]}
+                onPress={handleAddDictionaryTerm}
+              >
+                <Plus size={16} color={colors.primary} />
+              </TouchableOpacity>
+            </View>
             {/* SECCIÓN NAS WD MY CLOUD EX4100 (DATASET LLM) */}
             <View style={styles.nasHeaderBox}>
               <Database size={16} color={colors.primary} />

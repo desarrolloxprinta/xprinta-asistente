@@ -1,4 +1,5 @@
 import { ExpoSpeechRecognitionModule } from 'expo-speech-recognition';
+import { DictionaryService } from './dictionaryService';
 
 let isListeningActive = false;
 let currentTranscript = '';
@@ -24,7 +25,7 @@ export class SpeechService {
   }
 
   /**
-   * Starts active speech recognition with automatic silence timeout & dynamic voice streaming
+   * Inicia el reconocimiento de voz enriquecido con el diccionario técnico de Xprinta
    */
   static async startListening(
     onUpdate?: (text: string) => void,
@@ -46,6 +47,9 @@ export class SpeechService {
         return false;
       }
 
+      // 1. Obtener términos técnicos y nombres para sesgo fonético contextual
+      const biasingTerms = await DictionaryService.getAllTermsForSpeechBiasing();
+
       // Cleanup prior subscriptions
       this.cleanupSubscriptions();
 
@@ -64,7 +68,7 @@ export class SpeechService {
           // Reset silence timer on every new word recognized
           if (silenceTimer) clearTimeout(silenceTimer);
           
-          // If user stopped talking for 1.8 seconds, automatically finish and trigger AI
+          // Si el usuario deja de hablar por 1.8 segundos, procesar automáticamente
           if (text.trim().length > 3) {
             silenceTimer = setTimeout(async () => {
               if (isListeningActive && onSilenceAutoEnd) {
@@ -78,7 +82,6 @@ export class SpeechService {
       });
 
       speechEndSub = ExpoSpeechRecognitionModule.addListener('speechend', () => {
-        // Native end of utterance detected by iOS
         if (currentTranscript.trim().length > 3 && !silenceTimer) {
           silenceTimer = setTimeout(async () => {
             if (isListeningActive && onSilenceAutoEnd) {
@@ -106,6 +109,8 @@ export class SpeechService {
         interimResults: true,
         continuous: true,
         addsPunctuation: true,
+        contextualStrings: biasingTerms.slice(0, 100), // Sesgo fonético en iOS / Android
+        iosTaskHint: 'dictation',
       });
 
       isListeningActive = true;
