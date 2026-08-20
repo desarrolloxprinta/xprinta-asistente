@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Speech from 'expo-speech';
 import * as FileSystem from 'expo-file-system/legacy';
 import { createAudioPlayer, setAudioModeAsync, setIsAudioActiveAsync } from 'expo-audio';
-import { ExpoSpeechRecognitionModule } from 'expo-speech-recognition';
+import { ExpoSpeechRecognitionModule, AVAudioSessionCategory, AVAudioSessionCategoryOptions, AVAudioSessionMode } from 'expo-speech-recognition';
 
 const STORAGE_KEY_ELEVENLABS = '@xprinta_elevenlabs_key';
 const STORAGE_KEY_ELEVENLABS_VOICE = '@xprinta_elevenlabs_voice_id';
@@ -60,8 +60,8 @@ export class ElevenLabsService {
 
   /**
    * Genera locución hiper-humana con ElevenLabs Turbo v2.5
-   * con normalización de audio, salida forzada a altavoz multimedia a máximo volumen
-   * y fallback automático a Expo Speech.
+   * con desbloqueo radical de la sesión de audio del sistema operativo,
+   * enrutamiento a altavoz principal y ganancia máxima (sin atenuación por micrófono).
    */
   static async speakText(text: string, voiceId?: string): Promise<void> {
     if (!text || text.trim().length === 0) return;
@@ -72,33 +72,51 @@ export class ElevenLabsService {
     const targetVoiceId = voiceId || (await this.getVoiceId());
 
     try {
-      // 1. Liberar cualquier sesión de grabación previa (micrófono) en iOS y Android
-      // Esto es crucial: si el micrófono sigue activo en el sistema operativo,
-      // el audio se enruta por el auricular de llamadas (receiver) en vez del altavoz multimedia principal.
+      // 1. Desactivar micrófono y liberar sesión de reconocimiento en iOS y Android
       try {
         if (ExpoSpeechRecognitionModule?.setAudioSessionActiveIOS) {
           ExpoSpeechRecognitionModule.setAudioSessionActiveIOS(false, { notifyOthersOnDeactivation: true });
         }
       } catch (e) {}
 
-      // 2. Configurar modo de audio en modo 'playback' y forzar salida por altavoz principal a máximo nivel
+      // 2. En iOS: cambiar la categoría nativa explícitamente a PLAYBACK puro (sin micrófono)
+      // Esto restituye el control del volumen al altavoz multimedia general del móvil y desactiva el auricular de llamadas.
+      try {
+        if (ExpoSpeechRecognitionModule?.setCategoryIOS) {
+          ExpoSpeechRecognitionModule.setCategoryIOS({
+            category: AVAudioSessionCategory.playback,
+            categoryOptions: [
+              AVAudioSessionCategoryOptions.defaultToSpeaker,
+              AVAudioSessionCategoryOptions.allowBluetooth,
+              AVAudioSessionCategoryOptions.allowBluetoothA2DP,
+              AVAudioSessionCategoryOptions.allowAirPlay,
+            ],
+            mode: AVAudioSessionMode.default,
+          });
+        }
+      } catch (e) {}
+
+      // 3. Configurar Expo Audio en modo Playback y activar el chip de audio nativo
       try {
         await setIsAudioActiveAsync(true);
         await setAudioModeAsync({
           playsInSilentMode: true,
           shouldPlayInBackground: false,
-          interruptionMode: 'duckOthers',
+          interruptionMode: 'doNotMix', // Exige foco de audio total sin ducking ni volumen bajado
           allowsRecording: false,
-          shouldRouteThroughEarpiece: false, // Forzar Altavoz Multimedia Principal (Loudspeaker)
+          shouldRouteThroughEarpiece: false,
         });
       } catch (e) {
         console.warn('Audio mode notice:', e);
       }
 
+      // Pequeño delay de 80ms para que el hardware de audio del móvil conmute del micrófono al altavoz
+      await new Promise(r => setTimeout(r, 80));
+
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 12000);
 
-      // 3. Petición a ElevenLabs Turbo v2.5 con configuración de ganancia (speaker_boost activado y mayor presencia)
+      // 4. Petición a ElevenLabs Turbo v2.5 con máxima presencia acústica
       const isFemale = targetVoiceId === 'gJlzF5JxsCvM5hQAoRyD';
       const response = await fetch(
         `https://api.elevenlabs.io/v1/text-to-speech/${targetVoiceId}?output_format=mp3_44100_128`,
@@ -116,7 +134,7 @@ export class ElevenLabsService {
               stability: isFemale ? 0.42 : 0.38,
               similarity_boost: 0.88,
               style: isFemale ? 0.20 : 0.22,
-              use_speaker_boost: true, // Aumenta claridad y volumen de salida en altavoces de teléfono
+              use_speaker_boost: true,
             },
           }),
           signal: controller.signal,
@@ -134,7 +152,7 @@ export class ElevenLabsService {
 
       const blob = await response.blob();
 
-      // 4. Conversión binaria segura a Base64
+      // 5. Conversión binaria segura a Base64
       const base64Data = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onloadend = () => {
@@ -158,7 +176,7 @@ export class ElevenLabsService {
         encoding: FileSystem.EncodingType.Base64,
       });
 
-      // 5. Instanciar reproductor y asegurar volumen 1.0 (100% ganancia nativa)
+      // 6. Reproducción asegurando volumen al 100%
       currentPlayer = createAudioPlayer(targetPath);
       if (currentPlayer) {
         currentPlayer.volume = 1.0;
@@ -178,6 +196,8 @@ export class ElevenLabsService {
         language: 'es-ES',
         pitch: isFemale ? 1.12 : 0.95,
         rate: 1.0,
+        volume: 1.0,
+        useApplicationAudioSession: false,
       });
     } catch (e) {
       console.warn('Fallback speech error:', e);

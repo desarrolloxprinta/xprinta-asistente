@@ -1,4 +1,4 @@
-import { ExpoSpeechRecognitionModule } from 'expo-speech-recognition';
+import { ExpoSpeechRecognitionModule, AVAudioSessionCategory, AVAudioSessionCategoryOptions, AVAudioSessionMode } from 'expo-speech-recognition';
 import { DictionaryService } from './dictionaryService';
 
 let isListeningActive = false;
@@ -25,7 +25,7 @@ export class SpeechService {
   }
 
   /**
-   * Inicia el reconocimiento de voz enriquecido con el diccionario técnico de Xprinta
+   * Inicia el reconocimiento de voz configurando la categoría iOS para que SIEMPRE enrute por altavoz principal
    */
   static async startListening(
     onUpdate?: (text: string) => void,
@@ -47,7 +47,26 @@ export class SpeechService {
         return false;
       }
 
-      // 1. Obtener términos técnicos y nombres para sesgo fonético contextual
+      // 1. Configurar AudioSession en iOS antes de iniciar reconocimiento para forzar salida a altavoz
+      try {
+        if (ExpoSpeechRecognitionModule?.setCategoryIOS) {
+          ExpoSpeechRecognitionModule.setCategoryIOS({
+            category: AVAudioSessionCategory.playAndRecord,
+            categoryOptions: [
+              AVAudioSessionCategoryOptions.defaultToSpeaker,
+              AVAudioSessionCategoryOptions.allowBluetooth,
+              AVAudioSessionCategoryOptions.allowBluetoothA2DP,
+              AVAudioSessionCategoryOptions.allowAirPlay,
+              AVAudioSessionCategoryOptions.mixWithOthers,
+            ],
+            mode: AVAudioSessionMode.default,
+          });
+        }
+      } catch (e) {
+        console.warn('setCategoryIOS notice:', e);
+      }
+
+      // 2. Obtener términos técnicos y nombres para sesgo fonético contextual
       const biasingTerms = await DictionaryService.getAllTermsForSpeechBiasing();
 
       // Cleanup prior subscriptions
@@ -109,7 +128,7 @@ export class SpeechService {
         interimResults: true,
         continuous: true,
         addsPunctuation: true,
-        contextualStrings: biasingTerms.slice(0, 100), // Sesgo fonético en iOS / Android
+        contextualStrings: biasingTerms.slice(0, 100),
         iosTaskHint: 'dictation',
       });
 
@@ -131,6 +150,12 @@ export class SpeechService {
         await ExpoSpeechRecognitionModule.stop();
         isListeningActive = false;
       }
+      // Desactivar la sesión de audio del speech recognizer inmediatamente
+      try {
+        if (ExpoSpeechRecognitionModule?.setAudioSessionActiveIOS) {
+          ExpoSpeechRecognitionModule.setAudioSessionActiveIOS(false, { notifyOthersOnDeactivation: true });
+        }
+      } catch (e) {}
     } catch (error) {
       console.warn('Failed to stop speech recognition:', error);
     }

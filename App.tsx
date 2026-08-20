@@ -54,7 +54,8 @@ import {
   Moon,
   Smartphone,
   Trash2,
-  BookOpen
+  BookOpen,
+  ChevronDown
 } from 'lucide-react-native';
 
 import { colors, lightTheme, darkTheme, typography, spacing, radius, ThemeColors } from './src/theme/tokens';
@@ -125,6 +126,8 @@ export default function App() {
   const [technicalDictionary, setTechnicalDictionary] = useState<DictionaryCategory[]>([]);
   const [newDictTerm, setNewDictTerm] = useState('');
   const [selectedDictCatId, setSelectedDictCatId] = useState('materials');
+  const [dictExpanded, setDictExpanded] = useState(false);
+  const [dictSearchFilter, setDictSearchFilter] = useState('');
 
     // NAS WD My Cloud EX4100 state
   const [nasHost, setNasHost] = useState('http://10.254.80.28');
@@ -1482,57 +1485,114 @@ export default function App() {
             </View>
 
 
-            {/* SECCIÓN DICCIONARIO TÉCNICO Y GLOSARIO XPRINTA */}
-            <View style={[styles.nasHeaderBox, { marginTop: 18, borderColor: 'rgba(241, 129, 8, 0.3)' }]}>
-              <BookOpen size={16} color={colors.primary} />
-              <Text style={styles.nasHeaderTitle}>Diccionario Técnico & Fonético Xprinta</Text>
-            </View>
-            <Text style={[styles.loginSubtitle, { marginHorizontal: 0, marginBottom: 10, fontSize: 13 }]}>
-              Vocabulario especializado inyectado en el reconocimiento de voz y en el cerebro de la IA para interpretar materiales, máquinas y personas.
-            </Text>
-
-            {/* Categorías del Diccionario */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 10 }}>
-              {technicalDictionary.map(cat => (
-                <TouchableOpacity
-                  key={cat.id}
-                  onPress={() => setSelectedDictCatId(cat.id)}
-                  style={[styles.catChip, selectedDictCatId === cat.id && styles.catChipActive]}
-                >
-                  <Text style={[styles.catChipText, selectedDictCatId === cat.id && styles.catChipTextActive]}>
-                    {cat.name} ({cat.terms.length})
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-
-            {/* Lista de Términos de la Categoría Seleccionada */}
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12, maxHeight: 130 }}>
-              {(technicalDictionary.find(c => c.id === selectedDictCatId)?.terms || []).slice(0, 16).map(term => (
-                <View key={term} style={[styles.pillButton, { paddingVertical: 5, paddingHorizontal: 10, borderRadius: 12, backgroundColor: activeTheme.isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)' }]}>
-                  <Text style={{ fontSize: 12.5, color: activeTheme.textPrimary, fontWeight: '500' }}>{term}</Text>
-                  <TouchableOpacity onPress={() => handleRemoveDictionaryTerm(selectedDictCatId, term)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                    <X size={12} color="#EF4444" style={{ marginLeft: 5 }} />
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </View>
-
-            {/* Input para Agregar Nuevo Término */}
-            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
-              <TextInput
-                placeholder="Añadir material, máquina o persona..."
-                placeholderTextColor={colors.n500}
-                style={[styles.fieldInput, { flex: 1, marginBottom: 0 }]}
-                value={newDictTerm}
-                onChangeText={setNewDictTerm}
-              />
+            {/* SECCIÓN DICCIONARIO TÉCNICO Y GLOSARIO XPRINTA (REDESIGN PREMIUM & ESPACIADO) */}
+            <View style={{ marginTop: 18, marginBottom: 16, borderRadius: 16, backgroundColor: activeTheme.bgCard, borderWidth: 1, borderColor: activeTheme.borderSubtle, overflow: 'hidden' }}>
               <TouchableOpacity
-                style={[styles.btnSecondary, { paddingHorizontal: 16, justifyContent: 'center', alignItems: 'center' }]}
-                onPress={handleAddDictionaryTerm}
+                activeOpacity={0.7}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setDictExpanded(!dictExpanded);
+                }}
+                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 14 }}
               >
-                <Plus size={16} color={colors.primary} />
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+                  <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: 'rgba(241, 129, 8, 0.12)', alignItems: 'center', justifyContent: 'center' }}>
+                    <BookOpen size={18} color={colors.primary} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 15, fontWeight: '700', color: activeTheme.textPrimary }}>Glosario & Diccionario</Text>
+                    <Text style={{ fontSize: 12, color: activeTheme.textSecondary, marginTop: 1 }}>
+                      {technicalDictionary.reduce((acc, c) => acc + c.terms.length, 0)} términos técnicos activos
+                    </Text>
+                  </View>
+                </View>
+                {dictExpanded ? (
+                  <ChevronUp size={20} color={colors.primary} />
+                ) : (
+                  <ChevronDown size={20} color={activeTheme.textSecondary} />
+                )}
               </TouchableOpacity>
+
+              {dictExpanded && (
+                <View style={{ paddingHorizontal: 14, paddingBottom: 16, borderTopWidth: 1, borderTopColor: activeTheme.borderSubtle }}>
+                  <Text style={{ fontSize: 12.5, color: activeTheme.textSecondary, marginVertical: 10, lineHeight: 18 }}>
+                    Términos y jerga industrial inyectados automáticamente para sesgo fonético en el micrófono y comprensión semántica de la IA.
+                  </Text>
+
+                  {/* Selector de Categorías con scroll fluido */}
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+                    <View style={{ flexDirection: 'row', gap: 6 }}>
+                      {technicalDictionary.map(cat => (
+                        <TouchableOpacity
+                          key={cat.id}
+                          onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            setSelectedDictCatId(cat.id);
+                          }}
+                          style={[
+                            styles.catChip,
+                            selectedDictCatId === cat.id && styles.catChipActive,
+                            { paddingHorizontal: 12, paddingVertical: 6, marginHorizontal: 0 }
+                          ]}
+                        >
+                          <Text style={[styles.catChipText, selectedDictCatId === cat.id && styles.catChipTextActive, { fontSize: 12 }]}>
+                            {cat.name} ({cat.terms.length})
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </ScrollView>
+
+                  {/* Input para agregar término */}
+                  <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+                    <TextInput
+                      placeholder="Nuevo término, máquina o persona..."
+                      placeholderTextColor={colors.n500}
+                      style={[styles.fieldInput, { flex: 1, marginBottom: 0, fontSize: 13, height: 42 }]}
+                      value={newDictTerm}
+                      onChangeText={setNewDictTerm}
+                    />
+                    <TouchableOpacity
+                      style={[styles.btnSecondary, { paddingHorizontal: 14, height: 42, justifyContent: 'center', alignItems: 'center' }]}
+                      onPress={handleAddDictionaryTerm}
+                    >
+                      <Plus size={16} color={colors.primary} />
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Lista de Términos en badges limpios */}
+                  <View style={{ maxHeight: 150, borderRadius: 12, backgroundColor: activeTheme.isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.03)', padding: 8 }}>
+                    <ScrollView nestedScrollEnabled showsVerticalScrollIndicator={true}>
+                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                        {(technicalDictionary.find(c => c.id === selectedDictCatId)?.terms || []).map(term => (
+                          <View
+                            key={term}
+                            style={{
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              paddingVertical: 5,
+                              paddingHorizontal: 10,
+                              borderRadius: 10,
+                              backgroundColor: activeTheme.isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.85)',
+                              borderWidth: 1,
+                              borderColor: activeTheme.borderSubtle,
+                            }}
+                          >
+                            <Text style={{ fontSize: 12, color: activeTheme.textPrimary, fontWeight: '500' }}>{term}</Text>
+                            <TouchableOpacity
+                              onPress={() => handleRemoveDictionaryTerm(selectedDictCatId, term)}
+                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                              style={{ marginLeft: 6 }}
+                            >
+                              <X size={12} color="#EF4444" />
+                            </TouchableOpacity>
+                          </View>
+                        ))}
+                      </View>
+                    </ScrollView>
+                  </View>
+                </View>
+              )}
             </View>
             {/* SECCIÓN NAS WD MY CLOUD EX4100 (DATASET LLM) */}
             <View style={styles.nasHeaderBox}>
