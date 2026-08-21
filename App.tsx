@@ -1392,12 +1392,12 @@ export default function App() {
               ))}
             </ScrollView>
 
-            {/* SECCIÓN VOZ HYPER-HUMANA ELEVENLABS */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4, marginTop: 4 }}>
+            {/* SECCIÓN VOZ HYPER-HUMANA ELEVENLABS (CATÁLOGO DE VOCES) */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6, marginTop: 4 }}>
               <Volume2 size={15} color={colors.primary} />
               <Text style={styles.fieldLabel}>Selección de Voz Oficial de la IA</Text>
             </View>
-            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
               {ELEVENLABS_VOICES.map(v => (
                 <TouchableOpacity
                   key={v.id}
@@ -1408,18 +1408,19 @@ export default function App() {
                   }}
                   style={[
                     styles.themeOptionBtn,
-                    { flex: 1, paddingVertical: 12 },
+                    { minWidth: '30%', flex: 1, paddingVertical: 10, paddingHorizontal: 6 },
                     selectedVoiceId === v.id && styles.themeOptionBtnActive,
                   ]}
                 >
                   <Text
                     style={[
                       styles.themeOptionText,
-                      { fontWeight: '700', fontSize: 13.5 },
+                      { fontWeight: '700', fontSize: 12.5, textAlign: 'center' },
                       selectedVoiceId === v.id && styles.themeOptionTextActive,
                     ]}
+                    numberOfLines={1}
                   >
-                    {v.gender === 'male' ? '🧔 ' : '👩 '}{v.name} ({v.gender === 'male' ? 'Masculina' : 'Femenina'})
+                    {v.gender === 'male' ? '🧔 ' : '👩 '}{v.name}
                   </Text>
                 </TouchableOpacity>
               ))}

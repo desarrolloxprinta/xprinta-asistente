@@ -9,7 +9,7 @@ const STORAGE_KEY_ELEVENLABS_VOICE = '@xprinta_elevenlabs_voice_id';
 
 const DEFAULT_KEY = 'sk_9bfb86dc60bd91b3977a997168a8b6c5453672a860872bce';
 
-// Catálogo de Voces Oficiales Hiper-Humanas en Español
+// Catálogo de Voces Oficiales Hiper-Humanas en Español de Xprinta
 export const ELEVENLABS_VOICES = [
   {
     id: 't8NIKqytDP52LZhxHPhn',
@@ -23,6 +23,13 @@ export const ELEVENLABS_VOICES = [
     name: 'Beatriz',
     gender: 'female',
     description: 'Voz Femenina Agradable, Expresiva y Fluida',
+    accent: 'Español Peninsular',
+  },
+  {
+    id: 'rou7JK9I4KSUr1I7wxW7',
+    name: 'Emilio',
+    gender: 'male',
+    description: 'Voz Emilio Xprinta Oficial',
     accent: 'Español Peninsular',
   },
 ] as const;
@@ -60,8 +67,8 @@ export class ElevenLabsService {
 
   /**
    * Genera locución hiper-humana con ElevenLabs Turbo v2.5
-   * con desbloqueo radical de la sesión de audio del sistema operativo,
-   * enrutamiento a altavoz principal y ganancia máxima (sin atenuación por micrófono).
+   * con desbloqueo de la sesión de audio del sistema operativo,
+   * enrutamiento a altavoz principal y ganancia máxima.
    */
   static async speakText(text: string, voiceId?: string): Promise<void> {
     if (!text || text.trim().length === 0) return;
@@ -79,8 +86,7 @@ export class ElevenLabsService {
         }
       } catch (e) {}
 
-      // 2. En iOS: cambiar la categoría nativa explícitamente a PLAYBACK puro (sin micrófono)
-      // Esto restituye el control del volumen al altavoz multimedia general del móvil y desactiva el auricular de llamadas.
+      // 2. En iOS: cambiar la categoría nativa explícitamente a PLAYBACK puro
       try {
         if (ExpoSpeechRecognitionModule?.setCategoryIOS) {
           ExpoSpeechRecognitionModule.setCategoryIOS({
@@ -102,7 +108,7 @@ export class ElevenLabsService {
         await setAudioModeAsync({
           playsInSilentMode: true,
           shouldPlayInBackground: false,
-          interruptionMode: 'doNotMix', // Exige foco de audio total sin ducking ni volumen bajado
+          interruptionMode: 'doNotMix',
           allowsRecording: false,
           shouldRouteThroughEarpiece: false,
         });
@@ -110,14 +116,19 @@ export class ElevenLabsService {
         console.warn('Audio mode notice:', e);
       }
 
-      // Pequeño delay de 80ms para que el hardware de audio del móvil conmute del micrófono al altavoz
       await new Promise(r => setTimeout(r, 80));
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 12000);
 
-      // 4. Petición a ElevenLabs Turbo v2.5 con máxima presencia acústica
+      // 4. Petición a ElevenLabs Turbo v2.5
       const isFemale = targetVoiceId === 'gJlzF5JxsCvM5hQAoRyD';
+      const isEmilio = targetVoiceId === 'rou7JK9I4KSUr1I7wxW7';
+
+      const stability = isEmilio ? 0.50 : (isFemale ? 0.42 : 0.38);
+      const similarityBoost = isEmilio ? 0.85 : 0.88;
+      const style = isEmilio ? 0.15 : (isFemale ? 0.20 : 0.22);
+
       const response = await fetch(
         `https://api.elevenlabs.io/v1/text-to-speech/${targetVoiceId}?output_format=mp3_44100_128`,
         {
@@ -131,9 +142,9 @@ export class ElevenLabsService {
             text: text,
             model_id: 'eleven_turbo_v2_5',
             voice_settings: {
-              stability: isFemale ? 0.42 : 0.38,
-              similarity_boost: 0.88,
-              style: isFemale ? 0.20 : 0.22,
+              stability,
+              similarity_boost: similarityBoost,
+              style,
               use_speaker_boost: true,
             },
           }),
