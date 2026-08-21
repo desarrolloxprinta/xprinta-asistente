@@ -1420,7 +1420,7 @@ export default function App() {
                     ]}
                     numberOfLines={1}
                   >
-                    {v.gender === 'male' ? '🧔 ' : '👩 '}{v.name}
+                    {v.name}
                   </Text>
                 </TouchableOpacity>
               ))}
